@@ -59,7 +59,7 @@ of                                                                           {pr
 {LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*)    {printf("%s -> NAME\n", yytext);}
 {DIGIT}+                                                                     {printf("%s -> INT_LITERAL\n", yytext);}
 {DIGIT}+("."{DIGIT}+)?(e(-|"+")?{DIGIT}+)?                                   {printf("%s -> FLOAT_LITERAL\n", yytext);}
-\"[[:print:]]*\"                                                             {printf("%s -> STRING_LITERAL\n", yytext);}
+\"[^\n\r\t"]*\"                                                              {printf("%s -> STRING_LITERAL\n", yytext);}
 {WHITESPACE}          
 .                                                                            {printf("%s -> ERRO\n", yytext);}
 
