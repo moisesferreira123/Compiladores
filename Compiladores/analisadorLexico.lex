@@ -39,8 +39,8 @@ enum                                                                         {pr
 of                                                                           {printf("%s -> OF\n", yytext);}
 "&&"                                                                         {printf("%s -> AND\n", yytext);}
 "||"                                                                         {printf("%s -> OR\n", yytext);}
-"<"|"<="|">"|">="|"="|"<>"                                                   {printf("%s -> COMP\n", yytext);}                                                                       
-"+"                                                                          {printf("%s -> ADD\n", yytext);}
+"<"|"<="|">"|">="|"="|"<>"                                                   {printf("%s -> COMP\n", yytext);} 
+"+"                                                                          {printf("%s -> ADD\n", yytext);}                                                                      
 "-"                                                                          {printf("%s -> SUB\n", yytext);}
 "*"                                                                          {printf("%s -> MULT\n", yytext);}
 "/"                                                                          {printf("%s -> DIV\n", yytext);}
@@ -57,13 +57,15 @@ of                                                                           {pr
 "//"{COMMENT_SL}                                                             {printf("%s -> SINGLE_LINE_COMMENT \n", yytext);}
 "(*"{COMMENT_ML}"*)"                                                         {printf("%s -> MULTIPLE_LINE_COMMENT \n", yytext);}
 {LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*)    {printf("%s -> NAME\n", yytext);}
-(-|"+")?{DIGIT}+                                                             {printf("%s -> INT_LITERAL\n", yytext);}
-(-|"+")?{DIGIT}+("."{DIGIT}+)?(e(-|"+")?{DIGIT}+)?                           {printf("%s -> FLOAT_LITERAL\n", yytext);}
-\"[^\n\r\t"]*\"                                                              {printf("%s -> STRING_LITERAL\n", yytext);}
-{WHITESPACE}         
-.
+{DIGIT}+                                                                     {printf("%s -> INT_LITERAL\n", yytext);}
+{DIGIT}+("."{DIGIT}+)?(e(-|"+")?{DIGIT}+)?                                   {printf("%s -> FLOAT_LITERAL\n", yytext);}
+\"[[:print:]]*\"                                                             {printf("%s -> STRING_LITERAL\n", yytext);}
+{WHITESPACE}          
+.                                                                            {printf("%s -> ERRO\n", yytext);}
 
 %%
+
+
 int main(){
   yylex();
   return 0;
