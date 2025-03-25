@@ -4,7 +4,7 @@
 
 DIGIT [0-9]
 LETTER [a-zA-Z]
-WHITESPACE [ ]
+WHITESPACE [ \t\n]+
 COMMENT_SL .*
 COMMENT_ML [^("//")("(*")("*))]*
 
