@@ -1,61 +1,64 @@
 %{
 #include <iostream>
+#include "../symbol_table/SymbolTableTemporary.hpp"
 
 int numLines = 1; 
 int numCols = 0;
+SymbolTableTemporary table;
 
 enum Tokens {
-  TOK_INT=360,
-  TOK_FLOAT,
-  TOK_STRING,
-  TOK_BOOL,
-  TOK_PROGRAM,
-  TOK_BEGIN,
-  TOK_END,
-  TOK_VAR,
-  TOK_IN,
-  TOK_STRUCT,
-  TOK_NOT,
-  TOK_NULL,
-  TOK_NEW,
-  TOK_REF, 
-  TOK_DEREF,
-  TOK_TRUE, 
-  TOK_FALSE,
-  TOK_IF,
-  TOK_THEN,
-  TOK_ELSE,
-  TOK_FI,
-  TOK_WHILE,
-  TOK_DO,
-  TOK_OD,
-  TOK_RETURN,
-  TOK_ENUM,
-  TOK_OF,
-  TOK_AND,
-  TOK_OR,
-  TOK_COMP,
-  TOK_ADD,
-  TOK_SUB,
-  TOK_MULT,
-  TOK_DIV,
-  TOK_POT,
-  TOK_ATTRIBUTION,
-  TOK_COLON,
-  TOK_OPEN_PARENTHESIS,
-  TOK_CLOSE_PARENTHESIS,
-  TOK_SEMICOLON,
-  TOK_COMMA,
-  TOK_DOT,
-  TOK_OPEN_BRACES,
-  TOK_CLOSE_BRACES,
-  TOK_SINGLE_LINE_COMMENT,
-  TOK_MULTIPLE_LINE_COMMENT,
+  TOKEN_INT=360,
+  TOKEN_FLOAT,
+  TOKEN_STRING,
+  TOKEN_BOOL,
+  TOKEN_PROGRAM,
+  TOKEN_PROCEDURE,
+  TOKEN_BEGIN,
+  TOKEN_END,
+  TOKEN_VAR,
+  TOKEN_IN,
+  TOKEN_STRUCT,
+  TOKEN_NOT,
+  TOKEN_NULL,
+  TOKEN_NEW,
+  TOKEN_REF, 
+  TOKEN_DEREF,
+  TOKEN_TRUE, 
+  TOKEN_FALSE,
+  TOKEN_IF,
+  TOKEN_THEN,
+  TOKEN_ELSE,
+  TOKEN_FI,
+  TOKEN_WHILE,
+  TOKEN_DO,
+  TOKEN_OD,
+  TOKEN_RETURN,
+  TOKEN_ENUM,
+  TOKEN_OF,
+  TOKEN_AND,
+  TOKEN_OR,
+  TOKEN_COMP,
+  TOKEN_ADD,
+  TOKEN_SUB,
+  TOKEN_MULT,
+  TOKEN_DIV,
+  TOKEN_POT,
+  TOKEN_ATTRIBUTION,
+  TOKEN_COLON,
+  TOKEN_OPEN_PARENTHESIS,
+  TOKEN_CLOSE_PARENTHESIS,
+  TOKEN_SEMICOLON,
+  TOKEN_COMMA,
+  TOKEN_DOT,
+  TOKEN_OPEN_BRACES,
+  TOKEN_CLOSE_BRACES,
+  TOKEN_SINGLE_LINE_COMMENT,
+  TOKEN_MULTIPLE_LINE_COMMENT,
   NAME,
   INT_LITERAL,
   FLOAT_LITERAL,
   STRING_LITERAL,
-  TOK_ERRO
+  TOKEN_ERRO
 };
 
 %}
@@ -76,6 +79,7 @@ float                                                                        {nu
 string                                                                       {numCols += YYLeng(); printf("%s -> STRING\n", YYText());}
 bool                                                                         {numCols += YYLeng(); printf("%s -> BOOL\n", YYText());}
 program                                                                      {numCols += YYLeng(); printf("%s -> PROGRAM\n", YYText());}
+procedure                                                                    {numCols += YYLeng(); printf("%s -> PROCEDURE\n", YYText());}
 begin                                                                        {numCols += YYLeng(); printf("%s -> BEGIN\n", YYText());}
 end                                                                          {numCols += YYLeng(); printf("%s -> END\n", YYText());}
 var                                                                          {numCols += YYLeng(); printf("%s -> VAR\n", YYText());}
@@ -117,20 +121,25 @@ of                                                                           {nu
 "}"                                                                          {numCols += YYLeng(); printf("%s -> CLOSE_BRACES\n", YYText());}
 "//"{COMMENT_SL}                                                             {numCols += YYLeng(); printf("%s -> SINGLE_LINE_COMMENT \n", YYText());}
 "(*"{COMMENT_ML}"*)"                                                         {numCols += YYLeng(); printf("%s -> MULTIPLE_LINE_COMMENT \n", YYText());}
-{LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*)    {numCols += YYLeng(); printf("%s -> NAME\n", YYText());}
+{LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*)    {
+  numCols += YYLeng(); 
+  table.insert(YYText());
+  printf("%s -> NAME\n", YYText());
+}
 {DIGIT}+                                                                     {numCols += YYLeng(); printf("%s -> INT_LITERAL\n", YYText());}
 {DIGIT}+("."{DIGIT}+)?(e(-|"+")?{DIGIT}+)?                                   {numCols += YYLeng(); printf("%s -> FLOAT_LITERAL\n", YYText());}
 \"[^\n\r\t"]*\"                                                              {numCols += YYLeng(); printf("%s -> STRING_LITERAL\n", YYText());}
 {WHITESPACE}                                                                 {numCols += YYLeng();} 
-.                                                                            {numCols += YYLeng(); return TOK_ERRO;}
+.                                                                            {numCols += YYLeng(); return TOKEN_ERRO;}
 
 %%
 
 
 int main(){
   yyFlexLexer lexer;
-  if(lexer.yylex() == TOK_ERRO){
+  if(lexer.yylex() == TOKEN_ERRO){
     printf("Erro na linha %d e coluna %d\n", numLines, numCols);
   }
+  table.printTable();
   return 0;
 }
