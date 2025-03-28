@@ -1,5 +1,5 @@
 %{
-#include <stdio.h>
+#include <iostream>
 
 int numLines = 1; 
 int numCols = 0;
@@ -66,67 +66,70 @@ WHITESPACE [ \t]
 COMMENT_SL .*
 COMMENT_ML [^("//")("(*")("*))]*
 
+%option noyywrap
+
 %%
 
 \r\n|\r|\n                                                                   { numLines++;  numCols = 0; } 
-int                                                                          {numCols += yyleng;printf("%s -> INT\n", yytext);}
-float                                                                        {numCols += yyleng; printf("%s -> FLOAT\n", yytext);}
-string                                                                       {numCols += yyleng; printf("%s -> STRING\n", yytext);}
-bool                                                                         {numCols += yyleng; printf("%s -> BOOL\n", yytext);}
-program                                                                      {numCols += yyleng; printf("%s -> PROGRAM\n", yytext);}
-begin                                                                        {numCols += yyleng; printf("%s -> BEGIN\n", yytext);}
-end                                                                          {numCols += yyleng; printf("%s -> END\n", yytext);}
-var                                                                          {numCols += yyleng; printf("%s -> VAR\n", yytext);}
-in                                                                           {numCols += yyleng; printf("%s -> IN\n", yytext);}
-struct                                                                       {numCols += yyleng; printf("%s -> STRUCT\n", yytext);}
-not                                                                          {numCols += yyleng; printf("%s -> NOT\n", yytext);}
-null                                                                         {numCols += yyleng; printf("%s -> NULL\n", yytext);}
-new                                                                          {numCols += yyleng; printf("%s -> NEW\n", yytext);}
-ref                                                                          {numCols += yyleng; printf("%s -> REF\n", yytext);}
-deref                                                                        {numCols += yyleng; printf("%s -> DEREF\n", yytext);}
-true                                                                         {numCols += yyleng; printf("%s -> TRUE\n", yytext);}
-false                                                                        {numCols += yyleng; printf("%s -> FALSE\n", yytext);}
-if                                                                           {numCols += yyleng; printf("%s -> IF\n", yytext);}
-then                                                                         {numCols += yyleng; printf("%s -> THEN\n", yytext);}
-else                                                                         {numCols += yyleng; printf("%s -> ELSE\n", yytext);}
-fi                                                                           {numCols += yyleng; printf("%s -> FI\n", yytext);}
-while                                                                        {numCols += yyleng; printf("%s -> WHILE\n", yytext);}
-do                                                                           {numCols += yyleng; printf("%s -> DO\n", yytext);}
-od                                                                           {numCols += yyleng; printf("%s -> OD\n", yytext);}
-return                                                                       {numCols += yyleng; printf("%s -> RETURN\n", yytext);}
-enum                                                                         {numCols += yyleng; printf("%s -> ENUM\n", yytext);}
-of                                                                           {numCols += yyleng; printf("%s -> OF\n", yytext);}
-"&&"                                                                         {numCols += yyleng; printf("%s -> AND\n", yytext);}
-"||"                                                                         {numCols += yyleng; printf("%s -> OR\n", yytext);}
-"<"|"<="|">"|">="|"="|"<>"                                                   {numCols += yyleng; printf("%s -> COMP\n", yytext);} 
-"+"                                                                          {numCols += yyleng; printf("%s -> ADD\n", yytext);}                                                                      
-"-"                                                                          {numCols += yyleng; printf("%s -> SUB\n", yytext);}
-"*"                                                                          {numCols += yyleng; printf("%s -> MULT\n", yytext);}
-"/"                                                                          {numCols += yyleng; printf("%s -> DIV\n", yytext);}
-"^"                                                                          {numCols += yyleng; printf("%s -> POT\n", yytext);}
-":="                                                                         {numCols += yyleng; printf("%s -> ATTRIBUTION\n", yytext);}
-":"                                                                          {numCols += yyleng; printf("%s -> COLON\n", yytext);}
-"("                                                                          {numCols += yyleng; printf("%s -> OPEN_PARENTHESIS\n", yytext);}
-")"                                                                          {numCols += yyleng; printf("%s -> CLOSE_PARENTHESIS\n", yytext);}
-";"                                                                          {numCols += yyleng; printf("%s -> SEMICOLON\n", yytext);}
-","                                                                          {numCols += yyleng; printf("%s -> COMMA\n", yytext);}
-"."                                                                          {numCols += yyleng; printf("%s -> DOT\n", yytext);}
-"{"                                                                          {numCols += yyleng; printf("%s -> OPEN_BRACES\n", yytext);}
-"}"                                                                          {numCols += yyleng; printf("%s -> CLOSE_BRACES\n", yytext);}
-"//"{COMMENT_SL}                                                             {numCols += yyleng; printf("%s -> SINGLE_LINE_COMMENT \n", yytext);}
-"(*"{COMMENT_ML}"*)"                                                         {numCols += yyleng; printf("%s -> MULTIPLE_LINE_COMMENT \n", yytext);}
-{LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*)    {numCols += yyleng; printf("%s -> NAME\n", yytext);}
-{DIGIT}+                                                                     {numCols += yyleng; printf("%s -> INT_LITERAL\n", yytext);}
-{DIGIT}+("."{DIGIT}+)?(e(-|"+")?{DIGIT}+)?                                   {numCols += yyleng; printf("%s -> FLOAT_LITERAL\n", yytext);}
-\"[^\n\r\t"]*\"                                                              {numCols += yyleng; printf("%s -> STRING_LITERAL\n", yytext);}
-{WHITESPACE}                                                                 {numCols += yyleng;} 
-.                                                                            {numCols += yyleng; return TOK_ERRO;}
+int                                                                          {numCols += YYLeng();std::cout << YYText() << " -> INT\n";}
+float                                                                        {numCols += YYLeng(); printf("%s -> FLOAT\n", YYText());}
+string                                                                       {numCols += YYLeng(); printf("%s -> STRING\n", YYText());}
+bool                                                                         {numCols += YYLeng(); printf("%s -> BOOL\n", YYText());}
+program                                                                      {numCols += YYLeng(); printf("%s -> PROGRAM\n", YYText());}
+begin                                                                        {numCols += YYLeng(); printf("%s -> BEGIN\n", YYText());}
+end                                                                          {numCols += YYLeng(); printf("%s -> END\n", YYText());}
+var                                                                          {numCols += YYLeng(); printf("%s -> VAR\n", YYText());}
+in                                                                           {numCols += YYLeng(); printf("%s -> IN\n", YYText());}
+struct                                                                       {numCols += YYLeng(); printf("%s -> STRUCT\n", YYText());}
+not                                                                          {numCols += YYLeng(); printf("%s -> NOT\n", YYText());}
+null                                                                         {numCols += YYLeng(); printf("%s -> NULL\n", YYText());}
+new                                                                          {numCols += YYLeng(); printf("%s -> NEW\n", YYText());}
+ref                                                                          {numCols += YYLeng(); printf("%s -> REF\n", YYText());}
+deref                                                                        {numCols += YYLeng(); printf("%s -> DEREF\n", YYText());}
+true                                                                         {numCols += YYLeng(); printf("%s -> TRUE\n", YYText());}
+false                                                                        {numCols += YYLeng(); printf("%s -> FALSE\n", YYText());}
+if                                                                           {numCols += YYLeng(); printf("%s -> IF\n", YYText());}
+then                                                                         {numCols += YYLeng(); printf("%s -> THEN\n", YYText());}
+else                                                                         {numCols += YYLeng(); printf("%s -> ELSE\n", YYText());}
+fi                                                                           {numCols += YYLeng(); printf("%s -> FI\n", YYText());}
+while                                                                        {numCols += YYLeng(); printf("%s -> WHILE\n", YYText());}
+do                                                                           {numCols += YYLeng(); printf("%s -> DO\n", YYText());}
+od                                                                           {numCols += YYLeng(); printf("%s -> OD\n", YYText());}
+return                                                                       {numCols += YYLeng(); printf("%s -> RETURN\n", YYText());}
+enum                                                                         {numCols += YYLeng(); printf("%s -> ENUM\n", YYText());}
+of                                                                           {numCols += YYLeng(); printf("%s -> OF\n", YYText());}
+"&&"                                                                         {numCols += YYLeng(); printf("%s -> AND\n", YYText());}
+"||"                                                                         {numCols += YYLeng(); printf("%s -> OR\n", YYText());}
+"<"|"<="|">"|">="|"="|"<>"                                                   {numCols += YYLeng(); printf("%s -> COMP\n", YYText());} 
+"+"                                                                          {numCols += YYLeng(); printf("%s -> ADD\n", YYText());}                                                                      
+"-"                                                                          {numCols += YYLeng(); printf("%s -> SUB\n", YYText());}
+"*"                                                                          {numCols += YYLeng(); printf("%s -> MULT\n", YYText());}
+"/"                                                                          {numCols += YYLeng(); printf("%s -> DIV\n", YYText());}
+"^"                                                                          {numCols += YYLeng(); printf("%s -> POT\n", YYText());}
+":="                                                                         {numCols += YYLeng(); printf("%s -> ATTRIBUTION\n", YYText());}
+":"                                                                          {numCols += YYLeng(); printf("%s -> COLON\n", YYText());}
+"("                                                                          {numCols += YYLeng(); printf("%s -> OPEN_PARENTHESIS\n", YYText());}
+")"                                                                          {numCols += YYLeng(); printf("%s -> CLOSE_PARENTHESIS\n", YYText());}
+";"                                                                          {numCols += YYLeng(); printf("%s -> SEMICOLON\n", YYText());}
+","                                                                          {numCols += YYLeng(); printf("%s -> COMMA\n", YYText());}
+"."                                                                          {numCols += YYLeng(); printf("%s -> DOT\n", YYText());}
+"{"                                                                          {numCols += YYLeng(); printf("%s -> OPEN_BRACES\n", YYText());}
+"}"                                                                          {numCols += YYLeng(); printf("%s -> CLOSE_BRACES\n", YYText());}
+"//"{COMMENT_SL}                                                             {numCols += YYLeng(); printf("%s -> SINGLE_LINE_COMMENT \n", YYText());}
+"(*"{COMMENT_ML}"*)"                                                         {numCols += YYLeng(); printf("%s -> MULTIPLE_LINE_COMMENT \n", YYText());}
+{LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*)    {numCols += YYLeng(); printf("%s -> NAME\n", YYText());}
+{DIGIT}+                                                                     {numCols += YYLeng(); printf("%s -> INT_LITERAL\n", YYText());}
+{DIGIT}+("."{DIGIT}+)?(e(-|"+")?{DIGIT}+)?                                   {numCols += YYLeng(); printf("%s -> FLOAT_LITERAL\n", YYText());}
+\"[^\n\r\t"]*\"                                                              {numCols += YYLeng(); printf("%s -> STRING_LITERAL\n", YYText());}
+{WHITESPACE}                                                                 {numCols += YYLeng();} 
+.                                                                            {numCols += YYLeng(); return TOK_ERRO;}
 
 %%
 
 
 int main(){
-  if(yylex() == TOK_ERRO){
+  yyFlexLexer lexer;
+  if(lexer.yylex() == TOK_ERRO){
     printf("Erro na linha %d e coluna %d\n", numLines, numCols);
   }
   return 0;
