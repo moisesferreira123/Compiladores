@@ -1,0 +1,3 @@
+/mnt/c/Documents and Settings/Victor Xavier/Documents/compiladores/Compiladores/src/CMakeFiles/compilers.dir
+/mnt/c/Documents and Settings/Victor Xavier/Documents/compiladores/Compiladores/src/CMakeFiles/edit_cache.dir
+/mnt/c/Documents and Settings/Victor Xavier/Documents/compiladores/Compiladores/src/CMakeFiles/rebuild_cache.dir
