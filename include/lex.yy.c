@@ -554,8 +554,8 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "analisadorLexico.lex"
-#line 2 "analisadorLexico.lex"
+#line 1 "lexical_analyzer/analisadorLexico.lex"
+#line 2 "lexical_analyzer/analisadorLexico.lex"
 #include <iostream>
 #include "../symbol_table/SymbolTableTemporary.hpp"
 
@@ -836,7 +836,7 @@ YY_DECL
 		}
 
 	{
-#line 74 "analisadorLexico.lex"
+#line 74 "lexical_analyzer/analisadorLexico.lex"
 
 
 #line 843 "lex.yy.c"
@@ -899,248 +899,248 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 76 "analisadorLexico.lex"
+#line 76 "lexical_analyzer/analisadorLexico.lex"
 { numLines++;  numCols = 0; } 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 77 "analisadorLexico.lex"
+#line 77 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng();std::cout << YYText() << " -> INT\n";}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 78 "analisadorLexico.lex"
+#line 78 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> FLOAT\n", YYText());}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 79 "analisadorLexico.lex"
+#line 79 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> STRING\n", YYText());}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 80 "analisadorLexico.lex"
+#line 80 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> BOOL\n", YYText());}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 81 "analisadorLexico.lex"
+#line 81 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> PROGRAM\n", YYText());}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 82 "analisadorLexico.lex"
+#line 82 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> PROCEDURE\n", YYText());}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 83 "analisadorLexico.lex"
+#line 83 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> BEGIN\n", YYText());}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 84 "analisadorLexico.lex"
+#line 84 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> END\n", YYText());}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 85 "analisadorLexico.lex"
+#line 85 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> VAR\n", YYText());}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 86 "analisadorLexico.lex"
+#line 86 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> IN\n", YYText());}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 87 "analisadorLexico.lex"
+#line 87 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> STRUCT\n", YYText());}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 88 "analisadorLexico.lex"
+#line 88 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> NOT\n", YYText());}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 89 "analisadorLexico.lex"
+#line 89 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> NULL\n", YYText());}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 90 "analisadorLexico.lex"
+#line 90 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> NEW\n", YYText());}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 91 "analisadorLexico.lex"
+#line 91 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> REF\n", YYText());}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 92 "analisadorLexico.lex"
+#line 92 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> DEREF\n", YYText());}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 93 "analisadorLexico.lex"
+#line 93 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> TRUE\n", YYText());}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 94 "analisadorLexico.lex"
+#line 94 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> FALSE\n", YYText());}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 95 "analisadorLexico.lex"
+#line 95 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> IF\n", YYText());}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 96 "analisadorLexico.lex"
+#line 96 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> THEN\n", YYText());}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 97 "analisadorLexico.lex"
+#line 97 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> ELSE\n", YYText());}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 98 "analisadorLexico.lex"
+#line 98 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> FI\n", YYText());}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 99 "analisadorLexico.lex"
+#line 99 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> WHILE\n", YYText());}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 100 "analisadorLexico.lex"
+#line 100 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> DO\n", YYText());}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 101 "analisadorLexico.lex"
+#line 101 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> OD\n", YYText());}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 102 "analisadorLexico.lex"
+#line 102 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> RETURN\n", YYText());}
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 103 "analisadorLexico.lex"
+#line 103 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> ENUM\n", YYText());}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 104 "analisadorLexico.lex"
+#line 104 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> OF\n", YYText());}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 105 "analisadorLexico.lex"
+#line 105 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> AND\n", YYText());}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 106 "analisadorLexico.lex"
+#line 106 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> OR\n", YYText());}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 107 "analisadorLexico.lex"
+#line 107 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> COMP\n", YYText());} 
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 108 "analisadorLexico.lex"
+#line 108 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> ADD\n", YYText());}                                                                      
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 109 "analisadorLexico.lex"
+#line 109 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> SUB\n", YYText());}
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 110 "analisadorLexico.lex"
+#line 110 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> MULT\n", YYText());}
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 111 "analisadorLexico.lex"
+#line 111 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> DIV\n", YYText());}
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 112 "analisadorLexico.lex"
+#line 112 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> POT\n", YYText());}
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 113 "analisadorLexico.lex"
+#line 113 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> ATTRIBUTION\n", YYText());}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 114 "analisadorLexico.lex"
+#line 114 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> COLON\n", YYText());}
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 115 "analisadorLexico.lex"
+#line 115 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> OPEN_PARENTHESIS\n", YYText());}
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 116 "analisadorLexico.lex"
+#line 116 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> CLOSE_PARENTHESIS\n", YYText());}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 117 "analisadorLexico.lex"
+#line 117 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> SEMICOLON\n", YYText());}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 118 "analisadorLexico.lex"
+#line 118 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> COMMA\n", YYText());}
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 119 "analisadorLexico.lex"
+#line 119 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> DOT\n", YYText());}
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 120 "analisadorLexico.lex"
+#line 120 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> OPEN_BRACES\n", YYText());}
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 121 "analisadorLexico.lex"
+#line 121 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> CLOSE_BRACES\n", YYText());}
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 122 "analisadorLexico.lex"
+#line 122 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> SINGLE_LINE_COMMENT \n", YYText());}
 	YY_BREAK
 case 48:
 /* rule 48 can match eol */
 YY_RULE_SETUP
-#line 123 "analisadorLexico.lex"
+#line 123 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> MULTIPLE_LINE_COMMENT \n", YYText());}
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 124 "analisadorLexico.lex"
+#line 124 "lexical_analyzer/analisadorLexico.lex"
 {
   numCols += YYLeng(); 
   table.insert(YYText());
@@ -1149,32 +1149,32 @@ YY_RULE_SETUP
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 129 "analisadorLexico.lex"
+#line 129 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> INT_LITERAL\n", YYText());}
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 130 "analisadorLexico.lex"
+#line 130 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> FLOAT_LITERAL\n", YYText());}
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 131 "analisadorLexico.lex"
+#line 131 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); printf("%s -> STRING_LITERAL\n", YYText());}
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 132 "analisadorLexico.lex"
+#line 132 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng();} 
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 133 "analisadorLexico.lex"
+#line 133 "lexical_analyzer/analisadorLexico.lex"
 {numCols += YYLeng(); return TOKEN_ERRO;}
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 135 "analisadorLexico.lex"
+#line 135 "lexical_analyzer/analisadorLexico.lex"
 ECHO;
 	YY_BREAK
 #line 1181 "lex.yy.c"
@@ -2182,7 +2182,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 135 "analisadorLexico.lex"
+#line 135 "lexical_analyzer/analisadorLexico.lex"
 
 
 
