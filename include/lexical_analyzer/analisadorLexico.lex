@@ -6,7 +6,9 @@
 
 int numLines = 1; 
 int numCols = 0;
-SymbolTableTemporary table;
+
+SymbolTable table;
+bool newScope = false;
 
 enum Tokens {
   TOKEN_INT = 360,
@@ -81,12 +83,24 @@ float                                                                        { n
 string                                                                       { numCols += yyleng; std::cout << YYText() << " -> STRING\n"; }
 bool                                                                         { numCols += yyleng; std::cout << YYText() << " -> BOOL\n"; }
 program                                                                      { numCols += yyleng; std::cout << YYText() << " -> PROGRAM\n"; }
-procedure                                                                    { numCols += yyleng; std::cout << YYText() << " -> PROCEDURE\n"; }
+procedure                                                                    { 
+  newScope = true;
+  numCols += yyleng; 
+  std::cout << YYText() << " -> PROCEDURE\n"; 
+}
 begin                                                                        { numCols += yyleng; std::cout << YYText() << " -> BEGIN\n"; }
-end                                                                          { numCols += yyleng; std::cout << YYText() << " -> END\n"; }
+end                                                                          { 
+  table.activeRewind();
+  numCols += yyleng; 
+  std::cout << YYText() << " -> END\n"; 
+}
 var                                                                          { numCols += yyleng; std::cout << YYText() << " -> VAR\n"; }
 in                                                                           { numCols += yyleng; std::cout << YYText() << " -> IN\n"; }
-struct                                                                       { numCols += yyleng; std::cout << YYText() << " -> STRUCT\n"; }
+struct                                                                       {
+  newScope = true; 
+  numCols += yyleng; 
+  std::cout << YYText() << " -> STRUCT\n"; 
+}
 not                                                                          { numCols += yyleng; std::cout << YYText() << " -> NOT\n"; }
 null                                                                         { numCols += yyleng; std::cout << YYText() << " -> NULL\n"; }
 new                                                                          { numCols += yyleng; std::cout << YYText() << " -> NEW\n"; }
@@ -124,8 +138,12 @@ of                                                                           { n
 "//"{COMMENT_SL}                                                             { numCols += yyleng; std::cout << YYText() << " -> SINGLE_LINE_COMMENT \n"; }
 "(*"{COMMENT_ML}"*)"                                                         { numCols += yyleng; std::cout << YYText() << " -> MULTIPLE_LINE_COMMENT \n"; }
 {LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*)    {
-  numCols += yyleng; 
-  table.insert(YYText()());
+  numCols += yyleng;
+  table.insert(YYText()(), Symbol());
+  if (newScope) {
+    newScope = false;
+    table.newActive();
+  }
   std::cout << YYText() << " -> NAME\n";
 }
 {DIGIT}+                                                                     { numCols += yyleng; std::cout << YYText() << " -> INT_LITERAL\n"; }

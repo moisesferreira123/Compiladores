@@ -42,8 +42,8 @@ public:
     return active;
   }
   Node *activeRewind() {
-    if (active->getParent() == nullptr) {
-      throw std::runtime_error("At root");
+    if (active == nullptr) {
+      throw std::runtime_error("Symbol table is empty");
     }
 
     returnToParent();
