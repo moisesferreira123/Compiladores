@@ -1,5 +1,16 @@
 # Compilador
 
+## Como executar o programa
+
+- Pré-requisitos:
+
+- Comandos:
+  * `rm -rf build`
+  * `mkdir build && cd build`
+  * `cmake ..`
+  * `make`
+  * `make run`
+
 ## Erros conhecidos
 - [ ] Como definir quais escopos podem "sobrescrever" símbolos do escopo pai?
    - **Exemplo**:
