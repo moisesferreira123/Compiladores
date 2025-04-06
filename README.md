@@ -3,6 +3,10 @@
 ## Como executar o programa
 
 - Pré-requisitos:
+   * CMake 3.22.1
+   * g++ 11.4.0
+   * Flex 2.6.4
+   * Bison 3.8.2 (Futuramente)
 
 - Comandos:
   * `rm -rf build`
