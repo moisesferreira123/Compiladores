@@ -38,3 +38,34 @@ REL_OP ::= >
 REL_OP ::= >=
 REL_OP ::= =
 REL_OP ::= <>
+
++ EXPRESSÕES LÓGICAS
+
+EXP ::= AND_OP OR_OP'
+OR_OP' ::= || AND_OP OR_OP'
+OR_OP' ::= ''
+AND_OP ::= EXP_REL AND_OP'
+AND_OP' ::= && EXP_REL AND_OP'
+AND_OP' ::= ''
+EXP_REL ::= EXP_ARITH EXP_REL'
+EXP_REL' ::= REL_OP EXP_ARITH 
+EXP_REL' ::= ''
+EXP_ARITH ::= TERM EXP_ARITH'
+EXP_ARITH' ::= + TERM EXP_ARITH'
+EXP_ARITH' ::= - TERM EXP_ARITH'
+EXP_ARITH' ::= ''
+TERM ::= POW TERM'
+TERM' ::= * POW TERM'
+TERM' ::= / POW TERM'
+TERM' ::= ''
+POW ::= FACT POW'
+POW' ::= ^ POW
+POW' ::= ''
+FACT ::= ( EXP )
+FACT ::= id
+REL_OP ::= <
+REL_OP ::= <=
+REL_OP ::= >
+REL_OP ::= >=
+REL_OP ::= =
+REL_OP ::= <>
