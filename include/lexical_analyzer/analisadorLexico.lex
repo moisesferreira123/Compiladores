@@ -139,7 +139,7 @@ of                                                                           { n
 "(*"{COMMENT_ML}"*)"                                                         { numCols += yyleng; std::cout << YYText() << " -> MULTIPLE_LINE_COMMENT \n"; }
 {LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*)    {
   numCols += yyleng;
-  table.insert(YYText()(), Symbol());
+  table.insert(YYText(), Symbol());
   if (newScope) {
     newScope = false;
     table.newActive();
@@ -157,6 +157,6 @@ of                                                                           { n
 int main() {
   yyFlexLexer lexer;
   lexer.yylex();
-  table.printTable();
+  // table.printTable();
   return 0;
 }
