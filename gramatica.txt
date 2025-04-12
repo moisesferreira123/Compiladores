@@ -1,5 +1,71 @@
-Expr -> Term E'
-E' -> void | + Term E' |  - Term E'
-Term -> Fact T'
-T' -> void | * Fact T' | / Fact T'
-Fact -> Id / (Expr)
++ EXPRESSÕES ARITMÉTICAS
+
+EXP ::= TERM EXP'
+EXP' ::= + TERM EXP'
+EXP' ::= - TERM EXP'
+EXP' ::= ''
+TERM ::= POW TERM'
+TERM' ::= * POW TERM'
+TERM' ::= / POW TERM'
+TERM' ::= ''
+POW ::= FACT POW'
+POW' ::= ^ POW
+POW' ::= ''
+FACT ::= ( EXP )
+FACT ::= id
+
++ EXPRESSÕES RELACIONAIS
+
+EXP ::= EXP_ARITH EXP_REL
+EXP_REL ::= REL_OP EXP_ARITH 
+EXP_REL ::= ''
+EXP_ARITH ::= TERM EXP_ARITH'
+EXP_ARITH' ::= + TERM EXP_ARITH'
+EXP_ARITH' ::= - TERM EXP_ARITH'
+EXP_ARITH' ::= ''
+TERM ::= POW TERM'
+TERM' ::= * POW TERM'
+TERM' ::= / POW TERM'
+TERM' ::= ''
+POW ::= FACT POW'
+POW' ::= ^ POW
+POW' ::= ''
+FACT ::= ( EXP )
+FACT ::= id
+REL_OP ::= <
+REL_OP ::= <=
+REL_OP ::= >
+REL_OP ::= >=
+REL_OP ::= =
+REL_OP ::= <>
+
++ EXPRESSÕES LÓGICAS
+
+EXP ::= AND_OP OR_OP'
+OR_OP' ::= || AND_OP OR_OP'
+OR_OP' ::= ''
+AND_OP ::= EXP_REL AND_OP'
+AND_OP' ::= && EXP_REL AND_OP'
+AND_OP' ::= ''
+EXP_REL ::= EXP_ARITH EXP_REL'
+EXP_REL' ::= REL_OP EXP_ARITH 
+EXP_REL' ::= ''
+EXP_ARITH ::= TERM EXP_ARITH'
+EXP_ARITH' ::= + TERM EXP_ARITH'
+EXP_ARITH' ::= - TERM EXP_ARITH'
+EXP_ARITH' ::= ''
+TERM ::= POW TERM'
+TERM' ::= * POW TERM'
+TERM' ::= / POW TERM'
+TERM' ::= ''
+POW ::= FACT POW'
+POW' ::= ^ POW
+POW' ::= ''
+FACT ::= ( EXP )
+FACT ::= id
+REL_OP ::= <
+REL_OP ::= <=
+REL_OP ::= >
+REL_OP ::= >=
+REL_OP ::= =
+REL_OP ::= <>
