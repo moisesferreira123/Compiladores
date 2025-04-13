@@ -103,3 +103,46 @@ REL_OP ::= >
 REL_OP ::= >=
 REL_OP ::= =
 REL_OP ::= <>
+
++ VAR, ref, deref
+
+EXP ::= AND_OP OR_OP'
+OR_OP' ::= || AND_OP OR_OP'
+OR_OP' ::= ''
+AND_OP ::= NOT_OP AND_OP'
+AND_OP' ::= && NOT_OP AND_OP'
+AND_OP' ::= ''
+NOT_OP ::= NOT_OP' EXP_REL
+NOT_OP' ::= not NOT_OP'
+NOT_OP' ::= ''
+EXP_REL ::= EXP_ARITH EXP_REL'
+EXP_REL' ::= REL_OP EXP_ARITH 
+EXP_REL' ::= ''
+EXP_ARITH ::= TERM EXP_ARITH'
+EXP_ARITH' ::= + TERM EXP_ARITH'
+EXP_ARITH' ::= - TERM EXP_ARITH'
+EXP_ARITH' ::= ''
+TERM ::= POW TERM'
+TERM' ::= * POW TERM'
+TERM' ::= / POW TERM'
+TERM' ::= ''
+POW ::= FACT POW'
+POW' ::= ^ POW
+POW' ::= ''
+FACT ::= ( EXP )
+FACT ::= REF_VAR
+FACT ::= DEREF_VAR
+FACT ::= VAR
+REL_OP ::= <
+REL_OP ::= <=
+REL_OP ::= >
+REL_OP ::= >=
+REL_OP ::= =
+REL_OP ::= <>
+REF_VAR ::= ref ( VAR )
+DEREF_VAR ::= deref ( DEREF_VAR' )
+DEREF_VAR' ::= DEREF_VAR
+DEREF_VAR' ::= VAR
+VAR ::= id VAR'
+VAR' ::= . id VAR'
+VAR' ::= ''
