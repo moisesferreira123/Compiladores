@@ -82,21 +82,12 @@ float                                                                        { n
 string                                                                       { numCols += yyleng; std::cout << YYText() << " -> STRING\n"; }
 bool                                                                         { numCols += yyleng; std::cout << YYText() << " -> BOOL\n"; }
 program                                                                      { numCols += yyleng; std::cout << YYText() << " -> PROGRAM\n"; }
-procedure                                                                    { 
-  numCols += yyleng; 
-  std::cout << YYText() << " -> PROCEDURE\n"; 
-}
+procedure                                                                    { numCols += yyleng; std::cout << YYText() << " -> PROCEDURE\n";}
 begin                                                                        { numCols += yyleng; std::cout << YYText() << " -> BEGIN\n"; }
-end                                                                          { 
-  numCols += yyleng; 
-  std::cout << YYText() << " -> END\n"; 
-}
+end                                                                          { numCols += yyleng; std::cout << YYText() << " -> END\n"; }
 var                                                                          { numCols += yyleng; std::cout << YYText() << " -> VAR\n"; }
 in                                                                           { numCols += yyleng; std::cout << YYText() << " -> IN\n"; }
-struct                                                                       {
-  numCols += yyleng; 
-  std::cout << YYText() << " -> STRUCT\n"; 
-}
+struct                                                                       { numCols += yyleng; std::cout << YYText() << " -> STRUCT\n"; }
 not                                                                          { numCols += yyleng; std::cout << YYText() << " -> NOT\n"; }
 null                                                                         { numCols += yyleng; std::cout << YYText() << " -> NULL\n"; }
 new                                                                          { numCols += yyleng; std::cout << YYText() << " -> NEW\n"; }
