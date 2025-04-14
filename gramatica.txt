@@ -316,6 +316,13 @@ CALL_ARGS' ::= ''
 
 + STMT
 
+STMT_LIST ::= STMT STMT_LIST'
+STMT_LIST ::= ''
+STMT_LIST' ::= ; STMT STMT_LIST' 
+STMT_LIST' ::= ''
+
+STMT ::= id CALL_STMT
+
 EXP ::= AND_OP OR_OP'
 OR_OP' ::= || AND_OP OR_OP'
 OR_OP' ::= ''
@@ -343,7 +350,7 @@ VAR ::= FACT VAR'
 VAR' ::= . id VAR'
 VAR' ::= ''
 FACT ::= ( EXP )
-FACT ::= id CALL_STMT
+FACT ::= id INT_STMT
 FACT ::= REF_VAR
 FACT ::= DEREF_VAR
 FACT ::= LITERAL
@@ -368,13 +375,11 @@ LITERAL ::= null
 BOOL_LITERAL ::= true 
 BOOL_LITERAL ::= false
 
+INT_STMT ::= CALL_STMT
+INT_STMT ::= ''
+
 CALL_STMT ::= ( CALL_ARGS )
-CALL_STMT ::= ''
 CALL_ARGS ::= EXP CALL_ARGS'
 CALL_ARGS ::= ''
 CALL_ARGS' ::= , EXP CALL_ARGS'
 CALL_ARGS' ::= ''
-
-STMT_LIST ::= STMT ; STMT_LIST'
-STMT_LIST' ::= STMT ; STMT_LIST' 
-STMT_LIST' ::= ''
