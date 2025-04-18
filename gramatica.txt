@@ -147,7 +147,7 @@ VAR ::= id VAR'
 VAR' ::= . id VAR'
 VAR' ::= ''
 
-+ VAR, ref, deref (correto)
++ VAR, ref, deref (2)
 
 EXP ::= AND_OP OR_OP'
 OR_OP' ::= || AND_OP OR_OP'
@@ -183,6 +183,82 @@ FACT ::= DEREF_VAR
 REF_VAR ::= ref ( VAR )
 DEREF_VAR ::= deref ( DEREF_VAR' )
 DEREF_VAR' ::= VAR
+
+REL_OP ::= <
+REL_OP ::= <=
+REL_OP ::= >
+REL_OP ::= >=
+REL_OP ::= =
+REL_OP ::= <>
+
++ VAR, ref, deref (3)
+
+EXP ::= AND_OP OR_OP'
+OR_OP' ::= || AND_OP OR_OP'
+OR_OP' ::= ''
+AND_OP ::= NOT_OP AND_OP'
+AND_OP' ::= && NOT_OP AND_OP'
+AND_OP' ::= ''
+NOT_OP ::= NOT_OP' EXP_REL
+NOT_OP' ::= not NOT_OP'
+NOT_OP' ::= ''
+EXP_REL ::= EXP_ARITH EXP_REL'
+EXP_REL' ::= REL_OP EXP_ARITH 
+EXP_REL' ::= ''
+EXP_ARITH ::= TERM EXP_ARITH'
+EXP_ARITH' ::= + TERM EXP_ARITH'
+EXP_ARITH' ::= - TERM EXP_ARITH'
+EXP_ARITH' ::= ''
+TERM ::= POW TERM'
+TERM' ::= * POW TERM'
+TERM' ::= / POW TERM'
+TERM' ::= ''
+POW ::= VAR POW'
+POW' ::= ^ POW
+POW' ::= ''
+VAR ::= FACT VAR'
+VAR' ::= . id VAR'
+VAR' ::= ''
+FACT ::= ( EXP )
+FACT ::= id
+FACT ::= REF_VAR
+FACT ::= DEREF_VAR
+
+REF_VAR ::= ref ( VAR2 )
+DEREF_VAR ::= deref ( DEREF_VAR' )
+DEREF_VAR' ::= VAR2
+
+VAR2 ::= id VAR2'
+VAR2 ::= EXP2 . id VAR2'
+VAR2' ::= . id VAR2'
+VAR2' ::= ''
+
+EXP2 ::= AND_OP2 OR_OP2'
+OR_OP2' ::= || AND_OP2 OR_OP2'
+OR_OP2' ::= ''
+AND_OP2 ::= NOT_OP2 AND_OP2'
+AND_OP2' ::= && NOT_OP2 AND_OP2'
+AND_OP2' ::= ''
+NOT_OP2 ::= NOT_OP2' EXP_REL2
+NOT_OP2' ::= not NOT_OP2'
+NOT_OP2' ::= ''
+EXP_REL2 ::= EXP_ARITH2 EXP_REL2'
+EXP_REL2' ::= REL_OP2 EXP_ARITH 2
+EXP_REL2' ::= ''
+EXP_ARITH2 ::= TERM2 EXP_ARITH2'
+EXP_ARITH2' ::= + TERM2 EXP_ARITH2'
+EXP_ARITH2' ::= - TERM2 EXP_ARITH2'
+EXP_ARITH2' ::= ''
+TERM2 ::= POW2 TERM2'
+TERM2' ::= * POW2 TERM2'
+TERM2' ::= / POW2 TERM2'
+TERM2' ::= ''
+POW2 ::= FACT2 POW2'
+POW2' ::= ^ POW2
+POW2' ::= ''
+FACT2 ::= ( EXP )
+FACT2 ::= REF_VAR
+FACT2 ::= DEREF_VAR
 
 REL_OP ::= <
 REL_OP ::= <=
@@ -253,7 +329,7 @@ STMT_LIST ::= STMT ; STMT_LIST'
 STMT_LIST' ::= STMT ; STMT_LIST' 
 STMT_LIST' ::= '' 
 
-+ LITERAL, new, CALL_STMT (correto)
++ LITERAL, new, CALL_STMT (2)
 
 EXP ::= AND_OP OR_OP'
 OR_OP' ::= || AND_OP OR_OP'
@@ -313,6 +389,156 @@ CALL_ARGS ::= EXP CALL_ARGS'
 CALL_ARGS ::= ''
 CALL_ARGS' ::= , EXP CALL_ARGS'
 CALL_ARGS' ::= ''
+
++ LITERAL, new, CALL_STMT (correto)
+
+EXP ::= AND_OP OR_OP'
+OR_OP' ::= || AND_OP OR_OP'
+OR_OP' ::= ''
+AND_OP ::= NOT_OP AND_OP'
+AND_OP' ::= && NOT_OP AND_OP'
+AND_OP' ::= ''
+NOT_OP ::= NOT_OP' EXP_REL
+NOT_OP' ::= not NOT_OP'
+NOT_OP' ::= ''
+EXP_REL ::= EXP_ARITH EXP_REL'
+EXP_REL' ::= REL_OP EXP_ARITH 
+EXP_REL' ::= ''
+EXP_ARITH ::= TERM EXP_ARITH'
+EXP_ARITH' ::= + TERM EXP_ARITH'
+EXP_ARITH' ::= - TERM EXP_ARITH'
+EXP_ARITH' ::= ''
+TERM ::= POW TERM'
+TERM' ::= * POW TERM'
+TERM' ::= / POW TERM'
+TERM' ::= ''
+POW ::= VAR POW'
+POW' ::= ^ POW
+POW' ::= ''
+VAR ::= FACT VAR'
+VAR' ::= . id VAR'
+VAR' ::= ''
+FACT ::= ( EXP )
+FACT ::= id CALL_STMT
+FACT ::= REF_VAR
+FACT ::= DEREF_VAR
+FACT ::= LITERAL
+FACT ::= new id
+
+CALL_STMT ::= ( CALL_ARGS )
+CALL_STMT ::= ''
+CALL_ARGS ::= EXP CALL_ARGS'
+CALL_ARGS ::= ''
+CALL_ARGS' ::= , EXP CALL_ARGS'
+CALL_ARGS' ::= ''
+
+REF_VAR ::= ref ( VAR2 )
+DEREF_VAR ::= deref ( DEREF_VAR' )
+DEREF_VAR' ::= VAR2
+
+LITERAL ::= FLOAT_LITERAL
+LITERAL ::= INT_LITERAL
+LITERAL ::= STRING_LITERAL
+LITERAL ::= BOOL_LITERAL
+LITERAL ::= null
+BOOL_LITERAL ::= true 
+BOOL_LITERAL ::= false
+
+REL_OP ::= <
+REL_OP ::= <=
+REL_OP ::= >
+REL_OP ::= >=
+REL_OP ::= =
+REL_OP ::= <>
+
+VAR2 ::= id VAR2'
+VAR2 ::= EXP2 . id VAR2_'
+VAR2' ::= EXP3 . id VAR2_'
+VAR2' ::= . id VAR2_'
+VAR2_' ::= . id VAR2_'
+VAR2_' ::= ''
+
+EXP2 ::= AND_OP2 OR_OP2'
+OR_OP2' ::= || AND_OP2 OR_OP2'
+OR_OP2' ::= ''
+AND_OP2 ::= NOT_OP2 AND_OP2'
+AND_OP2' ::= && NOT_OP2 AND_OP2'
+AND_OP2' ::= ''
+NOT_OP2 ::= NOT_OP2' EXP_REL2
+NOT_OP2' ::= not NOT_OP2'
+NOT_OP2' ::= ''
+EXP_REL2 ::= EXP_ARITH2 EXP_REL2'
+EXP_REL2' ::= REL_OP EXP_ARITH2 
+EXP_REL2' ::= ''
+EXP_ARITH2 ::= TERM2 EXP_ARITH2'
+EXP_ARITH2' ::= + TERM2 EXP_ARITH2'
+EXP_ARITH2' ::= - TERM2 EXP_ARITH2'
+EXP_ARITH2' ::= ''
+TERM2 ::= POW2 TERM2'
+TERM2' ::= * POW2 TERM2'
+TERM2' ::= / POW2 TERM2'
+TERM2' ::= ''
+POW2 ::= FACT2 POW2'
+POW2' ::= ^ POW2
+POW2' ::= ''
+FACT2 ::= ( EXP )
+FACT2 ::= REF_VAR
+FACT2 ::= DEREF_VAR
+FACT2 ::= LITERAL
+FACT2 ::= new id
+
+EXP3 ::= OR_OP3
+OR_OP3 ::= || AND_OP4 OR_OP4'
+OR_OP3 ::= AND_OP3
+AND_OP3 ::= && NOT_OP4 AND_OP4'
+AND_OP3 ::= NOT_OP3
+NOT_OP3 ::= not NOT_OP4'
+NOT_OP3 ::= EXP_REL3
+EXP_REL3 ::= REL_OP EXP_ARITH4
+EXP_REL3 ::= EXP_ARITH3
+EXP_ARITH3 ::= + TERM4 EXP_ARITH4'
+EXP_ARITH3 ::= - TERM4 EXP_ARITH4'
+EXP_ARITH3 ::= TERM3
+TERM3 ::= / POW4 TERM4'
+TERM3 ::= * POW4 TERM4'
+TERM3 ::= POW3
+POW3 ::= ^ FACT3 POW4'
+FACT3 ::= ( EXP )
+FACT3 ::= id CALL_STMT
+FACT3 ::= REF_VAR
+FACT3 ::= DEREF_VAR
+FACT3 ::= LITERAL
+FACT3 ::= new id
+
+EXP4 ::= AND_OP4 OR_OP4'
+OR_OP4' ::= || AND_OP4 OR_OP4'
+OR_OP4' ::= ''
+AND_OP4 ::= NOT_OP4 AND_OP4'
+AND_OP4' ::= && NOT_OP4 AND_OP4'
+AND_OP4' ::= ''
+NOT_OP4 ::= NOT_OP4' EXP_REL4
+NOT_OP4' ::= not NOT_OP4'
+NOT_OP4' ::= ''
+EXP_REL4 ::= EXP_ARITH4 EXP_REL4'
+EXP_REL4' ::= REL_OP EXP_ARITH4 
+EXP_REL4' ::= ''
+EXP_ARITH4 ::= TERM4 EXP_ARITH4'
+EXP_ARITH4' ::= + TERM4 EXP_ARITH4'
+EXP_ARITH4' ::= - TERM4 EXP_ARITH4'
+EXP_ARITH4' ::= ''
+TERM4 ::= POW4 TERM4'
+TERM4' ::= * POW4 TERM4'
+TERM4' ::= / POW4 TERM4'
+TERM4' ::= ''
+POW4 ::= FACT4 POW4'
+POW4' ::= ^ POW4
+POW4' ::= ''
+FACT4 ::= ( EXP )
+FACT4 ::= id CALL_STMT
+FACT4 ::= REF_VAR
+FACT4 ::= DEREF_VAR
+FACT4 ::= LITERAL
+FACT4 ::= new id
 
 + STMT
 
