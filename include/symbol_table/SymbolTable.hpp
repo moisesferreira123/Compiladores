@@ -6,49 +6,49 @@
 #include <string>
 
 class SymbolTable {
-private:
-  Node *active = nullptr;
+   private:
+   Node* active = nullptr;
 
-  void returnToParent() {
-    auto old_active = active;
-    active = active->getParent();
-    delete old_active;
-  }
+   void returnToParent() {
+      auto old_active = active;
+      active = active->getParent();
+      delete old_active;
+   }
 
-public:
-  SymbolTable(Node *root = nullptr) {
-    if (root == nullptr) {
-      root = new Node();
-    }
+   public:
+   SymbolTable(Node* root = nullptr) {
+      if (root == nullptr) {
+         root = new Node();
+      }
 
-    this->active = root;
-  }
+      this->active = root;
+   }
 
-  ~SymbolTable() {
-    while (active != nullptr) {
+   ~SymbolTable() {
+      while (active != nullptr) {
+         returnToParent();
+      }
+   }
+
+   Symbol* insert(std::string const& name, Symbol symbol) {
+      return active->insert(name, symbol);
+   }
+   Symbol* lookup(std::string const& name) { return active->lookup(name); }
+   void remove(std::string const& name) { active->remove(name); }
+
+   Node* newActive() {
+      active = new Node(active);
+
+      return active;
+   }
+   Node* activeRewind() {
+      if (active == nullptr) {
+         throw std::runtime_error("Symbol table is empty");
+      }
+
       returnToParent();
-    }
-  }
-
-  Symbol *insert(std::string const &name, Symbol symbol) {
-    return active->insert(name, symbol);
-  }
-  Symbol *lookup(std::string const &name) { return active->lookup(name); }
-  void remove(std::string const &name) { active->remove(name); }
-
-  Node *newActive() {
-    active = new Node(active);
-
-    return active;
-  }
-  Node *activeRewind() {
-    if (active == nullptr) {
-      throw std::runtime_error("Symbol table is empty");
-    }
-
-    returnToParent();
-    return active;
-  }
+      return active;
+   }
 };
 
 #endif // !SYMBOL_TABLE_HPP_
