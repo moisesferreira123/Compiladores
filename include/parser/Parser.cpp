@@ -108,9 +108,9 @@ void ProcDecl() {
   if (lookahead == TOKEN_PROCEDURE) {
     match(TOKEN_PROCEDURE);
     match(NAME);
-    match(TOKEN_LPAREN);
+    match(TOKEN_OPEN_PARENTHESIS);
     ProcParamFieldDecl();
-    match(TOKEN_RPAREN);
+    match(TOKEN_CLOSE_PARENTHESIS);
     ProcTypeDecl();
     match(TOKEN_BEGIN);
     ProcDeclDecl();
