@@ -10,7 +10,7 @@ include_directories(include)
 # Arquivos fonte
 set(SOURCES
     main.cpp
-    include/parser/Parser.cpp
+    include/parser/Parser2.cpp
     include/lexical_analyzer/lex.yy.cc
 )
 

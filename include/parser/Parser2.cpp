@@ -1,4 +1,4 @@
-#include "Parser.hpp"
+#include "Parser2.hpp"
 #include <FlexLexer.h>
 
 int lookahead;
@@ -189,6 +189,9 @@ void EnumDecl() {
     match(TOKEN_ENUM);
     match(NAME);
     /// match(TOKEN_EQUAL) é necessário separar os tokens de comparação.
+    if(lookahead == '='){
+      match(TOKEN_COMP);
+    }
     match(TOKEN_OPEN_BRACES);
     match(NAME);
     EnumFieldDecl();
@@ -621,5 +624,375 @@ void Exp3() {
 }
 
 void OrOp3() {
-  // Estou na linha 126
+  if(lookahead == TOKEN_OR) {
+    match(TOKEN_OR);
+    AndOp4();
+    OrOp4_();
+  } else if(lookahead == TOKEN_AND || lookahead == TOKEN_COMP ||
+            lookahead == TOKEN_ADD || lookahead == TOKEN_SUB ||
+            lookahead == TOKEN_DIV || lookahead == TOKEN_MULT ||
+            lookahead == TOKEN_POT) {
+    AndOp3();
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+              << numCols << ". Esperado token " << TOKEN_OR << " ou " << TOKEN_AND
+              << " ou " << TOKEN_COMP << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << TOKEN_MULT << " ou " << TOKEN_POT << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void AndOp3() {
+  if(lookahead == TOKEN_AND) {
+    match(TOKEN_AND);
+    NotOp4();
+    AndOp4_();
+  } else if(lookahead == TOKEN_COMP || lookahead == TOKEN_ADD ||
+            lookahead == TOKEN_SUB || lookahead == TOKEN_DIV || 
+            lookahead == TOKEN_MULT || lookahead == TOKEN_POT) {
+    ExpRel3();
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+              << numCols << ". Esperado token " << TOKEN_AND
+              << " ou " << TOKEN_COMP << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << TOKEN_MULT << " ou " << TOKEN_POT << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void ExpRel3() {
+  if(lookahead == TOKEN_COMP) {
+    match(TOKEN_COMP);
+    ExpArith4();
+  } else if(lookahead == TOKEN_ADD || lookahead == TOKEN_SUB ||
+            lookahead == TOKEN_DIV || lookahead == TOKEN_MULT ||
+            lookahead == TOKEN_POT) {
+    ExpArith3();
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+              << numCols << ". Esperado token " << TOKEN_COMP << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << TOKEN_MULT << " ou " << TOKEN_POT << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void ExpArith3() {
+  if(lookahead == TOKEN_ADD) {
+    match(TOKEN_ADD);
+    Term4();
+    ExpArith4_();
+  } else if(lookahead == TOKEN_SUB) {
+    match(TOKEN_SUB);
+    Term4();
+    ExpArith4_();
+  } else if (lookahead == TOKEN_DIV || lookahead == TOKEN_MULT ||
+            lookahead == TOKEN_POT) {
+    Term3();
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+              << numCols << ". Esperado token " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << TOKEN_MULT << " ou " << TOKEN_POT << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void Term3() {
+  if(lookahead == TOKEN_DIV) {
+    match(TOKEN_DIV);
+    Pow4();
+    Term4_();
+  } else if(lookahead == TOKEN_MULT) {
+    match(TOKEN_MULT);
+    Pow4();
+    Term4_();
+  } else if(lookahead == TOKEN_POT) {
+    Pow3();
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+              << numCols << ". Esperado token " << TOKEN_DIV << " ou "
+              << TOKEN_MULT << " ou " << TOKEN_POT << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void Pow3() {
+  match(TOKEN_POT);
+  Fact3();
+  Pow4_();
+}
+
+void Fact3() {
+  if(lookahead == TOKEN_OPEN_PARENTHESIS) {
+    match(TOKEN_OPEN_PARENTHESIS);
+    Exp();
+    match(TOKEN_CLOSE_PARENTHESIS);
+  } else if (lookahead == NAME) {
+    match(NAME);
+    CallStmt();
+  } else if(lookahead == TOKEN_REF) {
+    RefVar();
+  } else if(lookahead == TOKEN_DEREF) {
+    DerefVar();
+  } else if(lookahead == FLOAT_LITERAL || lookahead == INT_LITERAL ||
+            lookahead == STRING_LITERAL || lookahead == TOKEN_TRUE ||
+            lookahead == TOKEN_FALSE || lookahead == TOKEN_NULL) {
+    Literal();
+  } else if(lookahead == TOKEN_NEW) {
+    match(TOKEN_NEW);
+    match(NAME);
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+            << numCols << ". Esperado token " << TOKEN_OPEN_PARENTHESIS << " ou " << NAME << " ou " << TOKEN_REF
+              << " ou " << TOKEN_DEREF << " ou " << FLOAT_LITERAL << " ou " << INT_LITERAL << " ou " << STRING_LITERAL << " ou "
+              << TOKEN_TRUE << " ou " << TOKEN_FALSE << " ou " << TOKEN_NULL << " ou " << TOKEN_NEW << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void Exp4() {
+  AndOp4();
+  OrOp4_();
+}
+
+void OrOp4_() {
+  if(lookahead == TOKEN_OR) {
+    match(TOKEN_OR);
+    AndOp4();
+    OrOp4_();
+  }
+}
+
+void AndOp4() {
+  NotOp4();
+  AndOp4_();
+}
+
+void AndOp4_() {
+  if(lookahead == TOKEN_AND) {
+    match(TOKEN_AND);
+    NotOp4();
+    AndOp4_();
+  }
+}
+
+ void NotOp4() {
+  NotOp4_();
+  ExpRel4();
+}
+
+void NotOp4_() {
+  if(lookahead == TOKEN_NOT) {
+    match(TOKEN_NOT);
+    NotOp4_();
+  }
+}
+
+void ExpRel4() {
+  ExpArith4();
+  ExpRel4_();
+}
+
+void ExpRel4_() {
+  if(lookahead == TOKEN_COMP) {
+    match(TOKEN_COMP);
+    ExpArith4();
+  }
+}
+
+void ExpArith4() {
+  Term4();
+  ExpArith4_();
+}
+
+void ExpArith4_() {
+  if(lookahead == TOKEN_ADD) {
+    match(TOKEN_ADD);
+    Term4();
+    ExpArith4_();
+  } else if(lookahead == TOKEN_SUB) {
+    match(TOKEN_SUB);
+    Term4();
+    ExpArith4_();
+  }
+}
+
+void Term4() {
+  Pow4();
+  Term4_();
+}
+
+void Term4_() {
+  if(lookahead == TOKEN_MULT) {
+    match(TOKEN_MULT);
+    Pow4();
+    Term4_();
+  } else if(lookahead == TOKEN_DIV) {
+    match(TOKEN_DIV);
+    Pow4();
+    Term4_();
+  }
+}
+
+void Pow4() {
+  // TODO: Trocar por Fact3.
+  Fact4();
+  Pow4_();
+}
+
+void Pow4_() {
+  if(lookahead == TOKEN_POT) {
+    match(TOKEN_POT);
+    Pow4();
+  }
+}
+
+// TODO: Trocar por Fact3.
+void Fact4() {
+  if(lookahead == TOKEN_OPEN_PARENTHESIS) {
+    match(TOKEN_OPEN_PARENTHESIS);
+    Exp();
+    match(TOKEN_CLOSE_PARENTHESIS);
+  } else if (lookahead == NAME) {
+    match(NAME);
+    CallStmt();
+  } else if(lookahead == TOKEN_REF) {
+    RefVar();
+  } else if(lookahead == TOKEN_DEREF) {
+    DerefVar();
+  } else if(lookahead == FLOAT_LITERAL || lookahead == INT_LITERAL ||
+            lookahead == STRING_LITERAL || lookahead == TOKEN_TRUE ||
+            lookahead == TOKEN_FALSE || lookahead == TOKEN_NULL) {
+    Literal();
+  } else if(lookahead == TOKEN_NEW) {
+    match(TOKEN_NEW);
+    match(NAME);
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+            << numCols << ". Esperado token " << TOKEN_OPEN_PARENTHESIS << " ou " << NAME << " ou " << TOKEN_REF
+              << " ou " << TOKEN_DEREF << " ou " << FLOAT_LITERAL << " ou " << INT_LITERAL << " ou " << STRING_LITERAL << " ou "
+              << TOKEN_TRUE << " ou " << TOKEN_FALSE << " ou " << TOKEN_NULL << " ou " << TOKEN_NEW << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void Stmt_() {
+  if(lookahead == TOKEN_OPEN_PARENTHESIS) {
+    match(TOKEN_OPEN_PARENTHESIS);
+    CallArgs();
+    match(TOKEN_CLOSE_PARENTHESIS);
+  } else if(lookahead == TOKEN_OR || lookahead == TOKEN_AND ||
+            lookahead == TOKEN_COMP || lookahead == TOKEN_ADD ||
+            lookahead == TOKEN_SUB || lookahead == TOKEN_DIV || 
+            lookahead == TOKEN_MULT || lookahead == TOKEN_POT ||
+            lookahead == TOKEN_DOT || lookahead == TOKEN_ATTRIBUTION) {
+    Var2_();
+    AssignStmt();
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+              << numCols << ". Esperado token " << TOKEN_OPEN_PARENTHESIS << " ou " << TOKEN_OR << " ou " << TOKEN_AND
+              << " ou " << TOKEN_COMP << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << TOKEN_MULT << " ou " << TOKEN_POT << " ou " << TOKEN_DOT << " ou " << TOKEN_ATTRIBUTION << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void StmtDeref_() {
+  if(lookahead == TOKEN_OR || lookahead == TOKEN_AND ||
+     lookahead == TOKEN_COMP || lookahead == TOKEN_ADD ||
+     lookahead == TOKEN_SUB || lookahead == TOKEN_DIV || 
+     lookahead == TOKEN_MULT || lookahead == TOKEN_POT) {
+    Exp3();
+    match(TOKEN_DOT);
+    match(NAME);
+    Var2__();
+  }
+}
+
+void AssignStmt() {
+  match(TOKEN_ATTRIBUTION);
+  Exp();
+}
+
+void Exp5() {
+  if(lookahead == TOKEN_NOT) {
+    match(TOKEN_NOT);
+    NotOp4();
+  } else if(lookahead == TOKEN_OPEN_PARENTHESIS || lookahead == TOKEN_REF ||
+            lookahead == FLOAT_LITERAL || lookahead == INT_LITERAL ||
+            lookahead == STRING_LITERAL || lookahead == TOKEN_TRUE ||
+            lookahead == TOKEN_FALSE || lookahead == TOKEN_NULL || 
+            lookahead == TOKEN_NEW) {
+    Fact5();
+    Exp3();
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+              << numCols << ". Esperado token " << TOKEN_NOT << " ou " << TOKEN_OPEN_PARENTHESIS << " ou " << TOKEN_REF
+              << " ou " << FLOAT_LITERAL << " ou " << INT_LITERAL << " ou " << STRING_LITERAL << " ou "
+              << TOKEN_TRUE << " ou " << TOKEN_FALSE << " ou " << TOKEN_NULL << " ou " << TOKEN_NEW << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void Fact5() {
+  if(lookahead == TOKEN_OPEN_PARENTHESIS) {
+    match(TOKEN_OPEN_PARENTHESIS);
+    Exp();
+    match(TOKEN_CLOSE_PARENTHESIS);
+  } else if(lookahead == TOKEN_REF) {
+    RefVar();
+  } else if(lookahead == lookahead == FLOAT_LITERAL || lookahead == INT_LITERAL ||
+            lookahead == STRING_LITERAL || lookahead == TOKEN_TRUE ||
+            lookahead == TOKEN_FALSE || lookahead == TOKEN_NULL) {
+    Literal();
+  } else if(lookahead == TOKEN_NEW) {
+    match(TOKEN_NEW);
+    match(NAME);
+  } else {
+    std::cerr << "Erro sintático na linha " << numLines << ", coluna "
+              << numCols << ". Esperado token " << TOKEN_OPEN_PARENTHESIS << " ou "  << TOKEN_REF
+              << " ou " << FLOAT_LITERAL << " ou " << INT_LITERAL << " ou " << STRING_LITERAL << " ou "
+              << TOKEN_TRUE << " ou " << TOKEN_FALSE << " ou " << TOKEN_NULL << " ou " << TOKEN_NEW << " mas encontrado "
+              << scanner.YYText() << "\n";
+    exit(1);
+  }
+}
+
+void IfStmt() {
+  match(TOKEN_IF);
+  Exp();
+  match(TOKEN_THEN);
+  StmtList();
+  ElseStmt();
+  match(TOKEN_FI);
+}
+
+void ElseStmt() {
+  if(lookahead == TOKEN_ELSE) {
+    match(TOKEN_ELSE);
+    StmtList();
+  }
+}
+
+void WhileStmt() {
+  match(TOKEN_WHILE);
+  Exp();
+  match(TOKEN_DO);
+  StmtList();
+  match(TOKEN_OD);
+}
+
+void ReturnStmt() {
+  match(TOKEN_RETURN);
+  match(TOKEN_OPEN_PARENTHESIS);
+  Exp();
+  match(TOKEN_CLOSE_PARENTHESIS);
 }
