@@ -53,7 +53,8 @@ enum Tokens {
    INT_LITERAL,
    FLOAT_LITERAL,
    STRING_LITERAL,
-   TOKEN_ERRO
+   TOKEN_ERRO, 
+   TOKEN_EQUAL
 };
 
 #endif // TOKENS_HPP

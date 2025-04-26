@@ -51,7 +51,8 @@ of                                      { numCols += yyleng; return TOKEN_OF; }
 
 "&&"                                    { numCols += yyleng; return TOKEN_AND; }
 "||"                                    { numCols += yyleng; return TOKEN_OR; }
-"<"|"<="|">"|">="|"="|"<>"              { numCols += yyleng; return TOKEN_COMP; }
+"<"|"<="|">"|">="|"<>"                  { numCols += yyleng; return TOKEN_COMP; }
+"="                                     { numCols += yyleng; return TOKEN_EQUAL; }
 "+"                                     { numCols += yyleng; return TOKEN_ADD; }
 "-"                                     { numCols += yyleng; return TOKEN_SUB; }
 "*"                                     { numCols += yyleng; return TOKEN_MULT; }

@@ -132,8 +132,8 @@ void ProcParamFieldDecl() {
 }
 
 void ProcParamFieldDecl_() {
-  if (lookahead == TOKEN_SEMICOLON) {
-    match(TOKEN_SEMICOLON);
+  if (lookahead == TOKEN_COMMA) {
+    match(TOKEN_COMMA);
     ParamFieldDecl();
     ProcParamFieldDecl_();
   }
@@ -188,10 +188,7 @@ void EnumDecl() {
   if (lookahead == TOKEN_ENUM) {
     match(TOKEN_ENUM);
     match(NAME);
-    /// match(TOKEN_EQUAL) é necessário separar os tokens de comparação.
-    if(lookahead == '='){
-      match(TOKEN_COMP);
-    }
+    match(TOKEN_EQUAL);
     match(TOKEN_OPEN_BRACES);
     match(NAME);
     EnumFieldDecl();
@@ -353,11 +350,12 @@ void ExpRel() {
   ExpRel_();
 }
 
-// TODO: Mudar caso formos criar um Token para o sinal de igual
 void ExpRel_() {
   if(lookahead == TOKEN_COMP) {
-    // TODO: Aqui é o RelOp. Acho que tem que mudar para colocar o sina de igual
     match(TOKEN_COMP);
+    ExpArith();
+  } else if(lookahead == TOKEN_EQUAL) {
+    match(TOKEN_EQUAL);
     ExpArith();
   }
 }
@@ -471,8 +469,8 @@ void CallArgs() {
 }
 
 void CallArgs_() {
-  if(lookahead == TOKEN_COLON) {
-    match(TOKEN_COLON);
+  if(lookahead == TOKEN_COMMA) {
+    match(TOKEN_COMMA);
     Exp();
     CallArgs_();
   }
@@ -550,11 +548,11 @@ void Var2() {
 }
 
 void Var2_() {
-  // TODO: Mudar o TOKEN_COMP daqui por causa do enum.
   if(lookahead == TOKEN_OR || lookahead == TOKEN_AND ||
      lookahead == TOKEN_COMP || lookahead == TOKEN_ADD ||
      lookahead == TOKEN_SUB || lookahead == TOKEN_DIV || 
-     lookahead == TOKEN_MULT || lookahead == TOKEN_POT) {
+     lookahead == TOKEN_MULT || lookahead == TOKEN_POT ||
+     lookahead == TOKEN_EQUAL) {
     Exp3();
     match(TOKEN_DOT);
     match(NAME);
@@ -631,12 +629,12 @@ void OrOp3() {
   } else if(lookahead == TOKEN_AND || lookahead == TOKEN_COMP ||
             lookahead == TOKEN_ADD || lookahead == TOKEN_SUB ||
             lookahead == TOKEN_DIV || lookahead == TOKEN_MULT ||
-            lookahead == TOKEN_POT) {
+            lookahead == TOKEN_POT || lookahead == TOKEN_EQUAL) {
     AndOp3();
   } else {
     std::cerr << "Erro sintático na linha " << numLines << ", coluna "
               << numCols << ". Esperado token " << TOKEN_OR << " ou " << TOKEN_AND
-              << " ou " << TOKEN_COMP << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << " ou " << TOKEN_COMP << " ou " << TOKEN_EQUAL << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
               << TOKEN_MULT << " ou " << TOKEN_POT << " mas encontrado "
               << scanner.YYText() << "\n";
     exit(1);
@@ -650,12 +648,13 @@ void AndOp3() {
     AndOp4_();
   } else if(lookahead == TOKEN_COMP || lookahead == TOKEN_ADD ||
             lookahead == TOKEN_SUB || lookahead == TOKEN_DIV || 
-            lookahead == TOKEN_MULT || lookahead == TOKEN_POT) {
+            lookahead == TOKEN_MULT || lookahead == TOKEN_POT ||
+            lookahead == TOKEN_EQUAL) {
     ExpRel3();
   } else {
     std::cerr << "Erro sintático na linha " << numLines << ", coluna "
               << numCols << ". Esperado token " << TOKEN_AND
-              << " ou " << TOKEN_COMP << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << " ou " << TOKEN_COMP << " ou " << TOKEN_EQUAL << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
               << TOKEN_MULT << " ou " << TOKEN_POT << " mas encontrado "
               << scanner.YYText() << "\n";
     exit(1);
@@ -666,13 +665,16 @@ void ExpRel3() {
   if(lookahead == TOKEN_COMP) {
     match(TOKEN_COMP);
     ExpArith4();
+  } else if(lookahead == TOKEN_EQUAL){
+    match(TOKEN_EQUAL);
+    ExpArith4();
   } else if(lookahead == TOKEN_ADD || lookahead == TOKEN_SUB ||
             lookahead == TOKEN_DIV || lookahead == TOKEN_MULT ||
             lookahead == TOKEN_POT) {
     ExpArith3();
   } else {
     std::cerr << "Erro sintático na linha " << numLines << ", coluna "
-              << numCols << ". Esperado token " << TOKEN_COMP << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << numCols << ". Esperado token " << TOKEN_COMP << " ou " << TOKEN_EQUAL << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
               << TOKEN_MULT << " ou " << TOKEN_POT << " mas encontrado "
               << scanner.YYText() << "\n";
     exit(1);
@@ -802,6 +804,9 @@ void ExpRel4_() {
   if(lookahead == TOKEN_COMP) {
     match(TOKEN_COMP);
     ExpArith4();
+  } else if(lookahead == TOKEN_EQUAL) {
+    match(TOKEN_EQUAL);
+    ExpArith4();
   }
 }
 
@@ -891,13 +896,14 @@ void Stmt_() {
             lookahead == TOKEN_COMP || lookahead == TOKEN_ADD ||
             lookahead == TOKEN_SUB || lookahead == TOKEN_DIV || 
             lookahead == TOKEN_MULT || lookahead == TOKEN_POT ||
-            lookahead == TOKEN_DOT || lookahead == TOKEN_ATTRIBUTION) {
+            lookahead == TOKEN_DOT || lookahead == TOKEN_ATTRIBUTION ||
+            lookahead == TOKEN_EQUAL) {
     Var2_();
     AssignStmt();
   } else {
     std::cerr << "Erro sintático na linha " << numLines << ", coluna "
               << numCols << ". Esperado token " << TOKEN_OPEN_PARENTHESIS << " ou " << TOKEN_OR << " ou " << TOKEN_AND
-              << " ou " << TOKEN_COMP << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
+              << " ou " << TOKEN_COMP << " ou " << TOKEN_EQUAL << " ou " << TOKEN_ADD << " ou " << TOKEN_SUB << " ou " << TOKEN_DIV << " ou "
               << TOKEN_MULT << " ou " << TOKEN_POT << " ou " << TOKEN_DOT << " ou " << TOKEN_ATTRIBUTION << " mas encontrado "
               << scanner.YYText() << "\n";
     exit(1);
@@ -908,7 +914,8 @@ void StmtDeref_() {
   if(lookahead == TOKEN_OR || lookahead == TOKEN_AND ||
      lookahead == TOKEN_COMP || lookahead == TOKEN_ADD ||
      lookahead == TOKEN_SUB || lookahead == TOKEN_DIV || 
-     lookahead == TOKEN_MULT || lookahead == TOKEN_POT) {
+     lookahead == TOKEN_MULT || lookahead == TOKEN_POT ||
+     lookahead == TOKEN_EQUAL) {
     Exp3();
     match(TOKEN_DOT);
     match(NAME);

@@ -311,8 +311,8 @@ typedef flex_uint8_t YY_CHAR;
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 55
-#define YY_END_OF_BUFFER 56
+#define YY_NUM_RULES 56
+#define YY_END_OF_BUFFER 57
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -322,21 +322,21 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[143] =
     {   0,
-        0,    0,   56,   54,   53,    1,    1,   54,   54,   40,
-       41,   35,   33,   43,   34,   44,   36,   50,   39,   42,
-       32,   32,   32,   49,   37,   49,   49,   49,   49,   49,
-       49,   49,   49,   49,   49,   49,   49,   49,   45,   54,
-       46,    1,    0,   52,   30,    0,   47,    0,   50,    0,
-       38,   32,   49,    0,   49,   49,   49,   25,   49,   49,
-       49,   23,   49,   20,   11,   49,   49,   49,   26,   29,
-       49,   49,   49,   49,   49,   49,   49,   31,    0,    0,
-       47,   51,    0,   51,   49,   49,   49,   49,   49,    9,
-       49,   49,   49,    2,   15,   13,   49,   49,   16,   49,
+        0,    0,   57,   55,   54,    1,    1,   55,   55,   41,
+       42,   36,   34,   44,   35,   45,   37,   51,   40,   43,
+       32,   33,   32,   50,   38,   50,   50,   50,   50,   50,
+       50,   50,   50,   50,   50,   50,   50,   50,   46,   55,
+       47,    1,    0,   53,   30,    0,   48,    0,   51,    0,
+       39,   32,   50,    0,   50,   50,   50,   25,   50,   50,
+       50,   23,   50,   20,   11,   50,   50,   50,   26,   29,
+       50,   50,   50,   50,   50,   50,   50,   31,    0,    0,
+       48,   52,    0,   52,   50,   50,   50,   50,   50,    9,
+       50,   50,   50,    2,   15,   13,   50,   50,   16,   50,
 
-       49,   49,   49,   10,   49,   48,   49,    5,   49,   22,
-       28,   49,   49,   14,   49,   49,   49,   49,   49,   21,
-       18,   49,    8,   17,   19,    3,   49,   49,   49,   49,
-       49,   24,   49,   49,   27,    4,   12,   49,    6,   49,
+       50,   50,   50,   10,   50,   49,   50,    5,   50,   22,
+       28,   50,   50,   14,   50,   50,   50,   50,   50,   21,
+       18,   50,    8,   17,   19,    3,   50,   50,   50,   50,
+       50,   24,   50,   50,   27,    4,   12,   50,    6,   50,
         7,    0
     } ;
 
@@ -874,129 +874,134 @@ YY_RULE_SETUP
 case 33:
 YY_RULE_SETUP
 #line 55 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_ADD; }
+{ numCols += yyleng; return TOKEN_EQUAL; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
 #line 56 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_SUB; }
+{ numCols += yyleng; return TOKEN_ADD; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
 #line 57 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_MULT; }
+{ numCols += yyleng; return TOKEN_SUB; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
 #line 58 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_DIV; }
+{ numCols += yyleng; return TOKEN_MULT; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
 #line 59 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_POT; }
+{ numCols += yyleng; return TOKEN_DIV; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
 #line 60 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_ATTRIBUTION; }
+{ numCols += yyleng; return TOKEN_POT; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
 #line 61 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_COLON; }
+{ numCols += yyleng; return TOKEN_ATTRIBUTION; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
 #line 62 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_OPEN_PARENTHESIS; }
+{ numCols += yyleng; return TOKEN_COLON; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
 #line 63 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_CLOSE_PARENTHESIS; }
+{ numCols += yyleng; return TOKEN_OPEN_PARENTHESIS; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
 #line 64 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_SEMICOLON; }
+{ numCols += yyleng; return TOKEN_CLOSE_PARENTHESIS; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
 #line 65 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_COMMA; }
+{ numCols += yyleng; return TOKEN_SEMICOLON; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
 #line 66 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_DOT; }
+{ numCols += yyleng; return TOKEN_COMMA; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
 #line 67 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_OPEN_BRACES; }
+{ numCols += yyleng; return TOKEN_DOT; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
 #line 68 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_CLOSE_BRACES; }
+{ numCols += yyleng; return TOKEN_OPEN_BRACES; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 70 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_SINGLE_LINE_COMMENT; }
+#line 69 "include/lexical_analyzer/LexicalAnalyzer.lex"
+{ numCols += yyleng; return TOKEN_CLOSE_BRACES; }
 	YY_BREAK
 case 48:
-/* rule 48 can match eol */
 YY_RULE_SETUP
 #line 71 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return TOKEN_MULTIPLE_LINE_COMMENT; }
+{ numCols += yyleng; return TOKEN_SINGLE_LINE_COMMENT; }
 	YY_BREAK
 case 49:
+/* rule 49 can match eol */
 YY_RULE_SETUP
-#line 73 "include/lexical_analyzer/LexicalAnalyzer.lex"
+#line 72 "include/lexical_analyzer/LexicalAnalyzer.lex"
+{ numCols += yyleng; return TOKEN_MULTIPLE_LINE_COMMENT; }
+	YY_BREAK
+case 50:
+YY_RULE_SETUP
+#line 74 "include/lexical_analyzer/LexicalAnalyzer.lex"
 {
                                         numCols += yyleng;
                                         table.insert(YYText(), Symbol());
                                         return NAME;
 }
 	YY_BREAK
-case 50:
-YY_RULE_SETUP
-#line 79 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return INT_LITERAL; }
-	YY_BREAK
 case 51:
 YY_RULE_SETUP
 #line 80 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{
-                                        numCols += yyleng; return FLOAT_LITERAL; }
+{ numCols += yyleng; return INT_LITERAL; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 82 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; return STRING_LITERAL; }
+#line 81 "include/lexical_analyzer/LexicalAnalyzer.lex"
+{
+                                        numCols += yyleng; return FLOAT_LITERAL; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
 #line 83 "include/lexical_analyzer/LexicalAnalyzer.lex"
-{ numCols += yyleng; /* ignora espaços */ }
+{ numCols += yyleng; return STRING_LITERAL; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
 #line 84 "include/lexical_analyzer/LexicalAnalyzer.lex"
+{ numCols += yyleng; /* ignora espaços */ }
+	YY_BREAK
+case 55:
+YY_RULE_SETUP
+#line 85 "include/lexical_analyzer/LexicalAnalyzer.lex"
 { 
                                         numCols += yyleng;
                                         std::cerr << "Erro léxico na linha " << numLines << ", coluna " << numCols << ": '" << YYText() << "'\n";
                                         return TOKEN_ERRO;
 }
 	YY_BREAK
-case 55:
+case 56:
 YY_RULE_SETUP
-#line 90 "include/lexical_analyzer/LexicalAnalyzer.lex"
+#line 91 "include/lexical_analyzer/LexicalAnalyzer.lex"
 ECHO;
 	YY_BREAK
-#line 1000 "include/lexical_analyzer/lex.yy.cc"
+#line 1005 "include/lexical_analyzer/lex.yy.cc"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1959,7 +1964,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 90 "include/lexical_analyzer/LexicalAnalyzer.lex"
+#line 91 "include/lexical_analyzer/LexicalAnalyzer.lex"
 
 
 int yyFlexLexer::yywrap() {
