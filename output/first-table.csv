@@ -1,6 +1,86 @@
 NonTerminal, FIRST
-E, ( id 
-E', + ε 
-F, ( id 
-T, ( id 
-T', * ε 
+AND_OP, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true 
+AND_OP', && ε 
+AND_OP3, && * + - / < <= <> = > >= ^ 
+AND_OP4, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true 
+AND_OP4', && ε 
+ASSIGN_STMT, := 
+BOOL_LITERAL, false true 
+CALL_ARGS, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true ε 
+CALL_ARGS', , ε 
+CALL_STMT, ( ε 
+DECL, enum procedure struct var 
+DEREF_VAR, deref 
+DEREF_VAR', ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true 
+ELSE_STMT, else ε 
+ENUM_DECL, enum 
+ENUM_DECL', , ε 
+EXP, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true 
+EXP2, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false new not null ref true 
+EXP3, && * + - / < <= <> = > >= ^ || 
+EXP4, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true 
+EXP5, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL false new not null ref true 
+EXP_ARITH, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+EXP_ARITH', + - ε 
+EXP_ARITH3, * + - / ^ 
+EXP_ARITH4, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+EXP_ARITH4', + - ε 
+EXP_REL, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+EXP_REL', < <= <> = > >= ε 
+EXP_REL3, * + - / < <= <> = > >= ^ 
+EXP_REL4, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+EXP_REL4', < <= <> = > >= ε 
+FACT, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+FACT2, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false new null ref true 
+FACT3, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+FACT4, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+FACT5, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL false new null ref true 
+IF_STMT, if 
+LITERAL, FLOAT_LITERAL INT_LITERAL STRING_LITERAL false null true 
+NOT_OP, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true 
+NOT_OP', not ε 
+NOT_OP4, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true 
+NOT_OP4', not ε 
+OR_OP', || ε 
+OR_OP3, && * + - / < <= <> = > >= ^ || 
+OR_OP4', || ε 
+PARAMFIELD_DECL, id 
+POW, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+POW', ^ ε 
+POW3, ^ 
+POW4, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+POW4', ^ ε 
+PROC_DECL, procedure 
+PROC_DECL_DECL, enum in procedure struct var ε 
+PROC_PARAMFIELD_DECL, id ε 
+PROC_PARAMFIELD_DECL', , ε 
+PROC_TYPE_DECL, : ε 
+PROGRAM, program 
+PROGRAM_DECL, enum procedure struct var ε 
+PROGRAM_DECL', ; ε 
+REC_DECL, struct 
+REC_PARAMFIELD_DECL, id ε 
+REC_PARAMFIELD_DECL', ; ε 
+REF_VAR, ref 
+REL_OP, < <= <> = > >= 
+RETURN_STMT, return 
+STMT, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id if new not null ref return true while 
+STMT', && ( * + - . / := < <= <> = > >= ^ || 
+STMT_DEREF', && * + - / < <= <> = > >= ^ || ε 
+STMT_LIST, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id if new not null ref return true while ε 
+STMT_LIST', ; ε 
+TERM, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+TERM', * / ε 
+TERM3, * / ^ 
+TERM4, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+TERM4', * / ε 
+TYPE, bool float id int ref string 
+VAR, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+VAR', . ε 
+VAR2, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new not null ref true 
+VAR2', && * + - . / < <= <> = > >= ^ || ε 
+VAR2_', . ε 
+VAR_DECL, var 
+VAR_DECL', : := 
+VAR_EXP_DECL, := ε 
+WHILE_STMT, while 

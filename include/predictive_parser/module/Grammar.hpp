@@ -3,12 +3,14 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <set>
+#include "HashUtil.hpp"
+
 
 const static std::string ARROW = "::="; // Define o símbolo de produção
 constexpr const char* EPSILON = "ε"; // Define o símbolo de epsilon
-static const std::string GRAMMAR_FILE_PATH = "gramatica.txt"; // Caminho do arquivo de gramática
+static const std::string GRAMMAR_FILE_PATH = "gramatica_correta.txt"; // Caminho do arquivo de gramática
 
 struct Production {
     std::vector<std::string> symbols;
@@ -19,7 +21,7 @@ struct Production {
 };
 
 class Grammar {
-    std::map<std::string, std::vector<Production>> productionsMap; // Mapa de produções
+    std::unordered_map<std::string, std::vector<Production>> productionsMap; // Mapa de produções
     std::set<std::string> nonTerminals;
     std::set<std::string> terminals;
     std::string startSymbol; // Símbolo inicial (não-terminal)
@@ -32,7 +34,7 @@ public:
 
     void addProduction(const std::string& nonTerminalName, const std::vector<std::string>& production);
 
-    const std::map<std::string, std::vector<Production>>& getProductionsMap() const;
+    const std::unordered_map<std::string, std::vector<Production>>& getProductionsMap() const;
     void loadFromFile();
 
     const std::set<std::string>& getNonTerminals() const;

@@ -3,7 +3,7 @@
 
 #include "Grammar.hpp"
 #include "FirstFollowCalculator.hpp"
-#include <map>
+#include <unordered_map>
 #include <fstream>
 #include <iomanip>
 
@@ -15,7 +15,7 @@ public:
     LL1Table(const Grammar& grammar, const FirstFollowCalculator& calculator);
     
     void buildTable();
-    const std::map<std::pair<std::string, std::string>, std::vector<std::string>>& getTable() const;
+    const std::unordered_map<std::pair<int, int>, std::vector<int>>& getTable() const;
     void printTable() const;
     void exportTableToCSV() const;
 
@@ -23,7 +23,7 @@ public:
 private:
     const Grammar& grammar;
     const FirstFollowCalculator& calculator;
-    std::map<std::pair<std::string, std::string>, const Production*> table; // Tabela LL(1)
+    std::unordered_map<std::pair<std::string, std::string>, const Production*> table; // Tabela LL(1)
     std::string formatProduction(const Production& production) const;
 
 

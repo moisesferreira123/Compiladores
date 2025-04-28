@@ -19,6 +19,7 @@ int main() {
 
    firstFollow.exportFirstToCSV(); // Exporta o conjunto FIRST para CSV
    firstFollow.exportFollowToCSV(); // Exporta o conjunto FOLLOW para CSV
+   firstFollow.exportFirstAndFollowToCSV();
 
    LL1Table ll1Table(grammar, firstFollow); // Cria a tabela LL(1)
    ll1Table.exportTableToCSV(); // Constrói a tabela LL(1)

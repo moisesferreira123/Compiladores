@@ -278,6 +278,55 @@ void FirstFollowCalculator::exportFirstToCSV() const {
     // Fecha o arquivo após a escrita
     file.close();
 }
+void FirstFollowCalculator::exportFirstAndFollowToCSV() const {
+    const std::string FILE_PATH_FF = "output/first_follow_table.csv"; // defina se ainda não tiver
+
+    // Abre o arquivo CSV para escrita
+    std::ofstream file(FILE_PATH_FF);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("Não foi possível abrir o arquivo " + FILE_PATH_FF + " para escrita");
+        return;
+    }
+
+    // Escreve o cabeçalho
+    file << "NonTerminal,FIRST,FOLLOW" << std::endl;
+
+    for (const auto& nonTerminal : grammar.getNonTerminals()) {
+        file << nonTerminal << ",";
+
+        // FIRST
+        std::string firstSymbols;
+        auto itFirst = first.find(nonTerminal);
+        if (itFirst != first.end()) {
+            for (const auto& symbol : itFirst->second) {
+                firstSymbols += symbol + " ";
+            }
+            if (!firstSymbols.empty())
+                firstSymbols.pop_back(); // Remove o último espaço
+        } else {
+            firstSymbols = "(vazio)";
+        }
+        file << "\"" << firstSymbols << "\"" << ","; // Coloca entre aspas para evitar problemas no CSV
+
+        // FOLLOW
+        std::string followSymbols;
+        auto itFollow = follow.find(nonTerminal);
+        if (itFollow != follow.end()) {
+            for (const auto& symbol : itFollow->second) {
+                followSymbols += symbol + " ";
+            }
+            if (!followSymbols.empty())
+                followSymbols.pop_back(); // Remove o último espaço
+        } else {
+            followSymbols = "(vazio)";
+        }
+        file << "\"" << followSymbols << "\"" << std::endl; // Coloca entre aspas também
+
+    }
+
+    file.close();
+}
 
 
 
@@ -286,11 +335,11 @@ bool FirstFollowCalculator::firstContainsEpsilon(const std::set<std::string>& fi
 }
 
 
-const std::map<std::string, std::set<std::string>>& FirstFollowCalculator::getFirst() const {
+const std::unordered_map<std::string, std::set<std::string>>& FirstFollowCalculator::getFirst() const {
     return first;
 }
 
-const std::map<std::string, std::set<std::string>>& FirstFollowCalculator::getFollow() const{
+const std::unordered_map<std::string, std::set<std::string>>& FirstFollowCalculator::getFollow() const{
     return follow;
 }
 

@@ -5,6 +5,8 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include "HashUtil.hpp"
+
 
 class PredictiveParser {
 public:

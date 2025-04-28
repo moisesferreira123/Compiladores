@@ -1,6 +1,86 @@
 NonTerminal, FOLLOW
-E, $ ) 
-E', $ ) 
-F, $ ) * + 
-T, $ ) + 
-T', $ ) + 
+AND_OP, ) , ; do else end fi in od then || 
+AND_OP', ) , ; do else end fi in od then || 
+AND_OP3, . 
+AND_OP4, . || 
+AND_OP4', . || 
+ASSIGN_STMT, ; else end fi od 
+BOOL_LITERAL, && ) * + , - . / ; < <= <> = > >= ^ do else end fi in od then || 
+CALL_ARGS, ) 
+CALL_ARGS', ) 
+CALL_STMT, && ) * + , - . / ; < <= <> = > >= ^ do else end fi in od then || 
+DECL, ; end in 
+DEREF_VAR, && ) * + , - . / := ; < <= <> = > >= ^ do else end fi in od then || 
+DEREF_VAR', ) 
+ELSE_STMT, fi 
+ENUM_DECL, ; end in 
+ENUM_DECL', } 
+EXP, ) , ; do else end fi in od then 
+EXP2, . 
+EXP3, . 
+EXP4, 
+EXP5, . 
+EXP_ARITH, && ) , ; < <= <> = > >= do else end fi in od then || 
+EXP_ARITH', && ) , ; < <= <> = > >= do else end fi in od then || 
+EXP_ARITH3, . 
+EXP_ARITH4, && . < <= <> = > >= || 
+EXP_ARITH4', && . < <= <> = > >= || 
+EXP_REL, && ) , ; do else end fi in od then || 
+EXP_REL', && ) , ; do else end fi in od then || 
+EXP_REL3, . 
+EXP_REL4, && . || 
+EXP_REL4', && . || 
+FACT, && ) * + , - . / ; < <= <> = > >= ^ do else end fi in od then || 
+FACT2, && * + - / < <= <> = > >= ^ || 
+FACT3, . ^ 
+FACT4, && * + - . / < <= <> = > >= ^ || 
+FACT5, && * + - / < <= <> = > >= ^ || 
+IF_STMT, ; else end fi od 
+LITERAL, && ) * + , - . / ; < <= <> = > >= ^ do else end fi in od then || 
+NOT_OP, && ) , ; do else end fi in od then || 
+NOT_OP', ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+NOT_OP4, && . || 
+NOT_OP4', ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+OR_OP', ) , ; do else end fi in od then 
+OR_OP3, . 
+OR_OP4', . 
+PARAMFIELD_DECL, ) , ; } 
+POW, && ) * + , - / ; < <= <> = > >= do else end fi in od then || 
+POW', && ) * + , - / ; < <= <> = > >= do else end fi in od then || 
+POW3, . 
+POW4, && * + - . / < <= <> = > >= || 
+POW4', && * + - . / < <= <> = > >= || 
+PROC_DECL, ; end in 
+PROC_DECL_DECL, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref end false id if new not null ref return true while 
+PROC_PARAMFIELD_DECL, ) 
+PROC_PARAMFIELD_DECL', ) 
+PROC_TYPE_DECL, begin 
+PROGRAM, $ 
+PROGRAM_DECL, end in 
+PROGRAM_DECL', end in 
+REC_DECL, ; end in 
+REC_PARAMFIELD_DECL, } 
+REC_PARAMFIELD_DECL', } 
+REF_VAR, && ) * + , - . / ; < <= <> = > >= ^ do else end fi in od then || 
+REL_OP, ( FLOAT_LITERAL INT_LITERAL STRING_LITERAL deref false id new null ref true 
+RETURN_STMT, ; else end fi od 
+STMT, ; else end fi od 
+STMT', ; else end fi od 
+STMT_DEREF', := 
+STMT_LIST, else end fi od 
+STMT_LIST', else end fi od 
+TERM, && ) + , - ; < <= <> = > >= do else end fi in od then || 
+TERM', && ) + , - ; < <= <> = > >= do else end fi in od then || 
+TERM3, . 
+TERM4, && + - . < <= <> = > >= || 
+TERM4', && + - . < <= <> = > >= || 
+TYPE, ) , := ; begin end in } 
+VAR, && ) * + , - / ; < <= <> = > >= ^ do else end fi in od then || 
+VAR', && ) * + , - / ; < <= <> = > >= ^ do else end fi in od then || 
+VAR2, ) 
+VAR2', ) := 
+VAR2_', ) := 
+VAR_DECL, ; end in 
+VAR_DECL', ; end in 
+VAR_EXP_DECL, ; end in 
+WHILE_STMT, ; else end fi od 

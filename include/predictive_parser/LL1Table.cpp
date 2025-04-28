@@ -6,6 +6,10 @@ LL1Table::LL1Table(const Grammar& grammar, const FirstFollowCalculator& calculat
     buildTable();
 }   
 
+// LL1Table::getTable(){
+
+// }
+
 
 
 // void LL1Table::buildTable() {
@@ -26,6 +30,11 @@ LL1Table::LL1Table(const Grammar& grammar, const FirstFollowCalculator& calculat
 //                     table[{nonTerminal, terminal}] = &production;  
 //                 }
 //             } else {
+
+//                 for (const auto& terminal : first.at(nonTerminal)) {
+//                     // Aqui você está associando a produção correta ao par (não-terminal, terminal)
+//                     table[{nonTerminal, terminal}] = &production;  
+//                 }
 //                 // Caso 2: Produção gera epsilon (ou pode gerar epsilon indiretamente)
 //                 // Aqui você pode querer adicionar a produção epsilon aos terminais no FOLLOW
 //                 for (const auto& terminal : follow.at(nonTerminal)) {
@@ -33,50 +42,46 @@ LL1Table::LL1Table(const Grammar& grammar, const FirstFollowCalculator& calculat
 //                     table[{nonTerminal, terminal}] = &production;  
 //                 }
 //                 // Se o símbolo "$" está no FOLLOW, também deve ser mapeado para a produção epsilon
-//                 if (follow.at(nonTerminal).find("$") != follow.at(nonTerminal).end()) {
-//                     table[{nonTerminal, "$"}] = &production;
-//                 }
+//                 // if (follow.at(nonTerminal).find("$") != follow.at(nonTerminal).end()) {
+//                 //     table[{nonTerminal, "$"}] = &production;
+//                 // }
 //             }
 //         }
 //     }
 // }
 
 
-// void LL1Table::buildTable() {
-//     const auto& first = calculator.getFirst();
-//     const auto& follow = calculator.getFollow();
 
-//     for (const auto& pair : grammar.getProductionsMap()) {
-//         const auto& nonTerminal = pair.first;
-//         const auto& productionList = pair.second;
+void LL1Table::buildTable() {
+    // const auto& first = calculator.getFirst();    
+    const auto& follow = calculator.getFollow();  
 
-//         for (const auto& production : productionList) {
-//             // Vamos usar o primeiro símbolo da produção
-//             if (!production.symbols.empty()) {
-//                 const std::string& firstSymbol = production.symbols[0];
+    for (const auto& pair : grammar.getProductionsMap()) {
+        const auto& nonTerminal = pair.first;
+        const auto& productionList = pair.second;
 
-//                 if (grammar.isTerminal(firstSymbol)) {
-//                     // Se for terminal, insere direto
-//                     table[{nonTerminal, firstSymbol}] = &production;
-//                 } else {
-//                     // Se for não-terminal, insere todos do FIRST dele
-//                     for (const auto& terminal : first.at(firstSymbol)) {
-//                         if (terminal != EPSILON) {
-//                             table[{nonTerminal, terminal}] = &production;
-//                         }
-//                     }
+        for (const auto& production : productionList) {
+            std::vector<std::string> symbols = production.symbols;
 
-//                     // Se o FIRST do símbolo contém ε
-//                     if (first.at(firstSymbol).find(EPSILON) != first.at(firstSymbol).end()) {
-//                         for (const auto& terminal : follow.at(nonTerminal)) {
-//                             table[{nonTerminal, terminal}] = &production;
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+            // Calcula FIRST da sequência da produção
+            auto firstSet = calculator.computeFirstSequence(symbols);
+
+            bool derivesEpsilon = (firstSet.find(EPSILON) != firstSet.end());
+
+            for (const auto& terminal : firstSet) {
+                if (terminal != EPSILON) {
+                    table[{nonTerminal, terminal}] = &production;
+                }
+            }
+
+            if (derivesEpsilon) {
+                for (const auto& terminal : follow.at(nonTerminal)) {
+                    table[{nonTerminal, terminal}] = &production;
+                }
+            }
+        }
+    }
+}
 
 
 void LL1Table::exportTableToCSV() const {

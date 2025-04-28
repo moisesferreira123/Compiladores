@@ -14,7 +14,7 @@ void Grammar::addProduction(const std::string& nonTerminalName, const std::vecto
 }
 
 
-const std::map<std::string, std::vector<Production>>& Grammar::getProductionsMap() const {
+const std::unordered_map<std::string, std::vector<Production>>& Grammar::getProductionsMap() const {
     return productionsMap;
 }
 
@@ -94,7 +94,7 @@ void Grammar::loadFromFile() {
         }
         
 
-        // Adiciona a produção ao mapa de produções
+        // Adiciona a produção ao unordered_mapa de produções
         addProduction(left, symbols);
 
         //Atualiza os conjuntos de não-terminais e terminais
