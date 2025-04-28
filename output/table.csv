@@ -1,0 +1,6 @@
+Não-Terminal,(,*,+,id
+E,T E',,,T E'
+E',,,+ T E',
+F,( E ),,,id
+T,F T',,,F T'
+T',,* F T',,

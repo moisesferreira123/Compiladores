@@ -1,4 +1,4 @@
-#include "include/Grammar.hpp"
+#include "module/Grammar.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -14,7 +14,7 @@ void Grammar::addProduction(const std::string& nonTerminalName, const std::vecto
 }
 
 
-const std::map<std::string, std::vector<Production>>& Grammar::getproductionsMap() const {
+const std::map<std::string, std::vector<Production>>& Grammar::getProductionsMap() const {
     return productionsMap;
 }
 
@@ -43,10 +43,10 @@ bool Grammar::nonTerminalProducesEpsilon(const std::string& nonTerminalName) con
 }
 
 
-void Grammar::loadFromFile(const std::string& filename) {
-    std::ifstream file(filename);
+void Grammar::loadFromFile() {
+    std::ifstream file(GRAMMAR_FILE_PATH);
     if (!file) {
-        std::cerr << "Erro ao abrir o arquivo: " << filename << std::endl;
+        std::cerr << "Erro ao abrir o arquivo: " << GRAMMAR_FILE_PATH << std::endl;
         return;
     }
 
@@ -150,7 +150,7 @@ void Grammar::printGrammar() const {
             }
             first = false;
             
-            if (prod.producesEpsilon || prod.symbols.empty()) {
+            if (prod.producesEpsilon) {
                 std::cout << "ε"; // Representa a produção vazia
             } else {
                 for (const auto& symbol : prod.symbols) {

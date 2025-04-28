@@ -1,0 +1,6 @@
+NonTerminal, FIRST
+E, ( id 
+E', + ε 
+F, ( id 
+T, ( id 
+T', * ε 

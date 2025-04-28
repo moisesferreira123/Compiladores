@@ -4,6 +4,11 @@
 #include "Grammar.hpp"
 #include "FirstFollowCalculator.hpp"
 #include <map>
+#include <fstream>
+#include <iomanip>
+
+const std::string TABLE_FILE_PATH = "output/table.csv";
+
 
 class LL1Table {
 public:
@@ -11,11 +16,18 @@ public:
     
     void buildTable();
     const std::map<std::pair<std::string, std::string>, std::vector<std::string>>& getTable() const;
+    void printTable() const;
+    void exportTableToCSV() const;
+
 
 private:
     const Grammar& grammar;
     const FirstFollowCalculator& calculator;
-    std::map<std::pair<std::string, std::string>, std::vector<std::string>> table;
+    std::map<std::pair<std::string, std::string>, const Production*> table; // Tabela LL(1)
+    std::string formatProduction(const Production& production) const;
+
+
+
 };
 
 #endif // LL1TABLE_HPP

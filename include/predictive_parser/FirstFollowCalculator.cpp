@@ -1,5 +1,5 @@
-#include "include/FirstFollowCalculator.hpp"
-#include "include/Grammar.hpp"
+#include "module/FirstFollowCalculator.hpp"
+#include "module/Grammar.hpp"
 #include <iostream>
 
 
@@ -10,40 +10,63 @@ FirstFollowCalculator::FirstFollowCalculator(const Grammar& grammar) : grammar(g
 
 void FirstFollowCalculator::computeFirst() {
     bool changed;
+    
     do {
         changed = false;
-        for (const auto& pair : grammar.getproductionsMap()) {
-            const auto& nonTerminal = pair.first;
-            const auto& productionList = pair.second;
+        
+        for (const auto& pair : grammar.getProductionsMap()) {
+            const auto& nonTerminal = pair.first;  // O não-terminal atual (lado esquerdo da produção)
+            const auto& productionList = pair.second;  // Lista de produções deste não-terminal
 
             for (const auto& production : productionList) {
                 size_t beforeSize = first[nonTerminal].size();
-                
                 bool allNullable = true;
+                
+                // Se produção é diretamente ε
+                if (production.producesEpsilon) {
+                    first[nonTerminal].insert(EPSILON);
+                    if (first[nonTerminal].size() > beforeSize) {
+                        changed = true;
+                    }
+                    continue;
+                }
+                
                 for (const auto& symbol : production.symbols) {
+                    // CASO 1: Símbolo terminal
                     if (grammar.isTerminal(symbol)) {
                         first[nonTerminal].insert(symbol);
                         allNullable = false;
                         break;
-                    } else {
-                        // Adiciona FIRST(symbol) exceto ε
-                        for (const auto& s : first[symbol]) {
-                            if (s != "ε") {
-                                first[nonTerminal].insert(s);
-                            }
+                    }
+                    
+                    // CASO 2: Símbolo não-terminal
+                    
+                    // Se FIRST ainda não foi calculado, continua para próxima iteração
+                    if (first.find(symbol) == first.end()) {
+                        allNullable = false;
+                        break;
+                    }
+                    
+                    // Adiciona FIRST(symbol) - {ε}
+                    bool hasEpsilon = false;
+                    for (const auto& s : first[symbol]) {
+                        if (s != EPSILON) {
+                            first[nonTerminal].insert(s);
+                        } else {
+                            hasEpsilon = true;
                         }
-                        
-                        // Se symbol não é anulável, para
-                        if (first[symbol].find("ε") == first[symbol].end()) {
-                            allNullable = false;
-                            break;
-                        }
+                    }
+                    
+                    // Se não contém ε, não precisa verificar próximos símbolos
+                    if (!hasEpsilon) {
+                        allNullable = false;
+                        break;
                     }
                 }
                 
-                // Se todos símbolos geram ε, então a produção gera ε
+                // Só adiciona ε se todos os símbolos na produção forem anuláveis
                 if (allNullable) {
-                    first[nonTerminal].insert("ε");
+                    first[nonTerminal].insert(EPSILON);
                 }
                 
                 if (first[nonTerminal].size() > beforeSize) {
@@ -51,7 +74,105 @@ void FirstFollowCalculator::computeFirst() {
                 }
             }
         }
-    } while (changed); // Repete até que não haja mais mudanças
+    } while (changed);
+}
+
+
+void FirstFollowCalculator::computeFollow() {
+    // Inicializa FOLLOW com o símbolo inicial
+    follow[grammar.getStartSymbol()].insert("$");
+
+    bool changed;
+    do {
+        changed = false;
+
+        for (const auto& pair : grammar.getProductionsMap()) {
+            const auto& nonTerminal = pair.first;       // A → ...
+            const auto& productionList = pair.second;   // Todas as produções A → α
+
+            for (const auto& production : productionList) {
+                const auto& symbols = production.symbols;  // α: lista de símbolos à direita
+
+                for (size_t i = 0; i < symbols.size(); ++i) {
+                    const auto& B = symbols[i];  // símbolo atual
+
+                    if (!grammar.isNonTerminal(B)) continue;  // Só calcula FOLLOW para não-terminais
+
+                    // Parte beta (os símbolos após B)
+                    if (i + 1 < symbols.size()) {
+                        // Existem símbolos depois de B
+                        std::vector<std::string> beta(symbols.begin() + i + 1, symbols.end());
+
+                        // Calcula FIRST(beta)
+                        std::set<std::string> firstBeta = computeFirstSequence(beta);
+
+                        for (const auto& symbol : firstBeta) {
+                            if (symbol != EPSILON) { // Adiciona FIRST(beta) - {ε} no FOLLOW(B)
+                                if (follow[B].insert(symbol).second) {
+                                    changed = true;
+                                }
+                            }
+                        }
+
+                        // Se FIRST(beta) contém ε, adiciona FOLLOW(A) no FOLLOW(B)
+                        if (firstBeta.count(EPSILON)) {
+                            for (const auto& sym : follow[nonTerminal]) {
+                                if (follow[B].insert(sym).second) {
+                                    changed = true;
+                                }
+                            }
+                        }
+                    } 
+                    else {
+                        // B é o último símbolo da produção
+                        // Adiciona FOLLOW(A) no FOLLOW(B)
+                        for (const auto& sym : follow[nonTerminal]) {
+                            if (follow[B].insert(sym).second) {
+                                changed = true;
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    } while (changed);
+}
+
+std::set<std::string> FirstFollowCalculator::computeFirstSequence(const std::vector<std::string>& symbols) const {
+    std::set<std::string> result;
+
+    bool allNullable = true;  // Se todos os símbolos até agora geram ε
+
+    for (const auto& symbol : symbols) {
+        if (grammar.isTerminal(symbol)) {
+            result.insert(symbol);
+            allNullable = false;
+            break;  // Terminal bloqueia a cadeia
+        } else {
+            const auto& firstSet = first.at(symbol);
+            bool hasEpsilon = false;
+
+            for (const auto& s : firstSet) {
+                if (s == EPSILON) {
+                    hasEpsilon = true;
+                } else {
+                    result.insert(s);
+                }
+            }
+
+            if (!hasEpsilon) {
+                allNullable = false;
+                break;
+            }
+        }
+    }
+
+    if (allNullable) {
+        result.insert(EPSILON);
+    }
+
+    return result;
 }
 
 
@@ -89,62 +210,87 @@ void FirstFollowCalculator::printFollow() const {
     }
 }
 
-// ERRO: A função computeFollow não está implementada corretamente.
-void FirstFollowCalculator::computeFollow() {
+void FirstFollowCalculator::exportFollowToCSV() const {
+    // Abre o arquivo CSV para escrita
+    std::ofstream file(FOLLOW_FILE_PATH);
 
-    // Inicializa FOLLOW com o símbolo inicial
-    follow[grammar.getStartSymbol()].insert("$"); // Adiciona o símbolo de fim de entrada
+    // Verifica se o arquivo foi aberto corretamente
+    if (!file.is_open()) {
+        throw std::runtime_error("Não foi possível abrir o arquivo " + FOLLOW_FILE_PATH + " para escrita");
+        return;
+    }
 
-    bool changed;
-    do {
-        changed = false;
-        for (const auto& pair : grammar.getproductionsMap()) {
-            const auto& nonTerminal = pair.first;
-            const auto& productionList = pair.second;
+    // Escreve o cabeçalho do CSV
+    file << "NonTerminal, FOLLOW" << std::endl;
 
-                for (const auto& production : productionList) {
+    // Percorre os não-terminais e escreve os valores de FOLLOW
+    for (const auto& nonTerminal : grammar.getNonTerminals()) {
+        file << nonTerminal << ", ";
 
-                    size_t beforeSize = follow[nonTerminal].size();
-                    
-                    // Percorre os símbolos da produção
-                    for (size_t i = 0; i < production.symbols.size(); ++i) {
-                        const auto& symbol = production.symbols[i];
-                        
-                        if (grammar.isNonTerminal(symbol)) {
-                            // Se o próximo símbolo não existe ou é terminal, adiciona FOLLOW(nonTerminal)
-                            if (i + 1 >= production.symbols.size()) {
-                                follow[symbol].insert(follow[nonTerminal].begin(), follow[nonTerminal].end());
-                            } else {
-                                const auto& nextSymbol = production.symbols[i + 1];
-                                
-                                if (grammar.isTerminal(nextSymbol)) {
-                                    follow[symbol].insert(nextSymbol);
-                                } else {
-                                    // Adiciona FIRST(nextSymbol) exceto ε
-                                    for (const auto& s : first[nextSymbol]) {
-                                        if (s != "ε") {
-                                            follow[symbol].insert(s);
-                                        }
-                                    }
-                                    
-                                    // Se FIRST(nextSymbol) contém ε, adiciona FOLLOW(nonTerminal)
-                                    if (first[nextSymbol].find("ε") != first[nextSymbol].end()) {
-                                        follow[symbol].insert(follow[nonTerminal].begin(), follow[nonTerminal].end());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (follow[nonTerminal].size() > beforeSize) {
-                        changed = true;
-                    }
-                    
-                }
-                
-            
+        auto it = follow.find(nonTerminal);
+        if (it != follow.end()) {
+            for (const auto& symbol : it->second) {
+                file << symbol << " ";
+            }
+        } else {
+            file << "(vazio)";
         }
-    } while (changed); // Repete até que não haja mais mudanças
+
+        file << std::endl;
+    }
+
+    // Fecha o arquivo após a escrita
+    file.close();
 }
 
+
+
+
+void FirstFollowCalculator::exportFirstToCSV() const {
+    // Abre o arquivo CSV para escrita
+    std::ofstream file(FIRST_FILE_PATH);
+
+    // Verifica se o arquivo foi aberto corretamente
+    if (!file.is_open()) {
+        throw std::runtime_error("Não foi possível abrir o arquivo " + FIRST_FILE_PATH + " para escrita");
+        return;
+    }
+
+    // Escreve o cabeçalho do CSV
+    file << "NonTerminal, FIRST" << std::endl;
+
+    // Percorre os não-terminais e escreve os valores de FIRST
+    for (const auto& nonTerminal : grammar.getNonTerminals()) {
+        file << nonTerminal << ", ";
+
+        auto it = first.find(nonTerminal);
+        if (it != first.end()) {
+            for (const auto& symbol : it->second) {
+                file << symbol << " ";
+            }
+        } else {
+            file << "(vazio)";
+        }
+
+        file << std::endl;
+    }
+
+    // Fecha o arquivo após a escrita
+    file.close();
+}
+
+
+
+bool FirstFollowCalculator::firstContainsEpsilon(const std::set<std::string>& firstSet) const {
+    return firstSet.find(EPSILON) == firstSet.end();
+}
+
+
+const std::map<std::string, std::set<std::string>>& FirstFollowCalculator::getFirst() const {
+    return first;
+}
+
+const std::map<std::string, std::set<std::string>>& FirstFollowCalculator::getFollow() const{
+    return follow;
+}
 

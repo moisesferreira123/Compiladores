@@ -6,8 +6,9 @@
 #include <map>
 #include <set>
 
-static const std::string ARROW = "::="; // Define o símbolo de produção
-static const std::string filePath = "gramatica_correta.txt"; // Caminho do arquivo de gramática
+const static std::string ARROW = "::="; // Define o símbolo de produção
+constexpr const char* EPSILON = "ε"; // Define o símbolo de epsilon
+static const std::string GRAMMAR_FILE_PATH = "gramatica.txt"; // Caminho do arquivo de gramática
 
 struct Production {
     std::vector<std::string> symbols;
@@ -18,11 +19,9 @@ struct Production {
 };
 
 class Grammar {
-private:
     std::map<std::string, std::vector<Production>> productionsMap; // Mapa de produções
     std::set<std::string> nonTerminals;
     std::set<std::string> terminals;
-
     std::string startSymbol; // Símbolo inicial (não-terminal)
 
     void identifyTerminals();
@@ -33,8 +32,8 @@ public:
 
     void addProduction(const std::string& nonTerminalName, const std::vector<std::string>& production);
 
-    const std::map<std::string, std::vector<Production>>& getproductionsMap() const;
-    void loadFromFile(const std::string& filename);
+    const std::map<std::string, std::vector<Production>>& getProductionsMap() const;
+    void loadFromFile();
 
     const std::set<std::string>& getNonTerminals() const;
 
