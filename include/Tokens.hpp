@@ -1,8 +1,9 @@
 #ifndef TOKENS_HPP
 #define TOKENS_HPP
 
+= 360,
 enum Tokens {
-   TOKEN_INT = 360,
+   TOKEN_INT 
    TOKEN_FLOAT,
    TOKEN_STRING,
    TOKEN_BOOL,
