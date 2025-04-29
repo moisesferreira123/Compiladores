@@ -10,7 +10,7 @@
 
 const static std::string ARROW = "::="; // Define o símbolo de produção
 constexpr const char* EPSILON = "ε"; // Define o símbolo de epsilon
-static const std::string GRAMMAR_FILE_PATH = "gramatica_correta.txt"; // Caminho do arquivo de gramática
+static const std::string GRAMMAR_FILE_PATH = "gramatica.txt"; // Caminho do arquivo de gramática
 
 struct Production {
     std::vector<std::string> symbols;

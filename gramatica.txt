@@ -1,10 +1,10 @@
-E ::= T E'
-E' ::= + T E'
-E' ::= ''
+EXP ::= TERM EXP2
+EXP2 ::= + TERM EXP2
+EXP2 ::= ''
 
-T ::= F T'
-T' ::= * F T'
-T' ::= ''
+TERM ::= FACT TERM'
+TERM' ::= * FACT TERM'
+TERM' ::= ''
 
-F ::= id
-F ::= ( E )
+FACT ::= id
+FACT ::= ( EXP )

@@ -210,74 +210,8 @@ void FirstFollowCalculator::printFollow() const {
     }
 }
 
-void FirstFollowCalculator::exportFollowToCSV() const {
-    // Abre o arquivo CSV para escrita
-    std::ofstream file(FOLLOW_FILE_PATH);
-
-    // Verifica se o arquivo foi aberto corretamente
-    if (!file.is_open()) {
-        throw std::runtime_error("Não foi possível abrir o arquivo " + FOLLOW_FILE_PATH + " para escrita");
-        return;
-    }
-
-    // Escreve o cabeçalho do CSV
-    file << "NonTerminal, FOLLOW" << std::endl;
-
-    // Percorre os não-terminais e escreve os valores de FOLLOW
-    for (const auto& nonTerminal : grammar.getNonTerminals()) {
-        file << nonTerminal << ", ";
-
-        auto it = follow.find(nonTerminal);
-        if (it != follow.end()) {
-            for (const auto& symbol : it->second) {
-                file << symbol << " ";
-            }
-        } else {
-            file << "(vazio)";
-        }
-
-        file << std::endl;
-    }
-
-    // Fecha o arquivo após a escrita
-    file.close();
-}
 
 
-
-
-void FirstFollowCalculator::exportFirstToCSV() const {
-    // Abre o arquivo CSV para escrita
-    std::ofstream file(FIRST_FILE_PATH);
-
-    // Verifica se o arquivo foi aberto corretamente
-    if (!file.is_open()) {
-        throw std::runtime_error("Não foi possível abrir o arquivo " + FIRST_FILE_PATH + " para escrita");
-        return;
-    }
-
-    // Escreve o cabeçalho do CSV
-    file << "NonTerminal, FIRST" << std::endl;
-
-    // Percorre os não-terminais e escreve os valores de FIRST
-    for (const auto& nonTerminal : grammar.getNonTerminals()) {
-        file << nonTerminal << ", ";
-
-        auto it = first.find(nonTerminal);
-        if (it != first.end()) {
-            for (const auto& symbol : it->second) {
-                file << symbol << " ";
-            }
-        } else {
-            file << "(vazio)";
-        }
-
-        file << std::endl;
-    }
-
-    // Fecha o arquivo após a escrita
-    file.close();
-}
 void FirstFollowCalculator::exportFirstAndFollowToCSV() const {
     const std::string FILE_PATH_FF = "output/first_follow_table.csv"; // defina se ainda não tiver
 

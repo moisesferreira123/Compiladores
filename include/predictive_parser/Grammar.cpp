@@ -3,7 +3,9 @@
 #include <sstream>
 #include <iostream>
 
-Grammar::Grammar() {}
+Grammar::Grammar() {
+    loadFromFile(); // Carrega a gramática do arquivo
+}
 
 void Grammar::addProduction(const std::string& nonTerminalName, const std::vector<std::string>& production) {
     bool isEpsilon = (production.empty() || (production.size() == 1 && production[0] == "''"));

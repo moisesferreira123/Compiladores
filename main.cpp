@@ -3,26 +3,16 @@
 #include "include/predictive_parser/module/FirstFollowCalculator.hpp"
 #include "include/predictive_parser/module/LL1Table.hpp"
 
+
 int main() {
    // advance(); // Carrega o primeiro token
    // Program(); // Inicia a análise sintática
-   Grammar grammar;
-   grammar.loadFromFile(); // Carrega a gramática do arquivo
-   grammar.printGrammar(); // Imprime a gramática carregada
 
-   FirstFollowCalculator firstFollow(grammar); // Calcula os conjuntos FIRST e FOLLOW
-   // firstFollow.computeFirst(); // Calcula o conjunto FIRST
-   // firstFollow.computeFollow(); // Calcula o conjunto FOLLOW
-
-   firstFollow.printFirst(); // Imprime o conjunto FIRST
-   firstFollow.printFollow(); // Imprime o conjunto FOLLOW
-
-   firstFollow.exportFirstToCSV(); // Exporta o conjunto FIRST para CSV
-   firstFollow.exportFollowToCSV(); // Exporta o conjunto FOLLOW para CSV
-   firstFollow.exportFirstAndFollowToCSV();
-
-   LL1Table ll1Table(grammar, firstFollow); // Cria a tabela LL(1)
+   LL1Table ll1Table; // Cria a tabela LL(1)
+   
    ll1Table.exportTableToCSV(); // Constrói a tabela LL(1)
+   ll1Table.exportParsingTableToCSV(); // Exporta a tabela de parsing para CSV
+   ll1Table.exportFirstAndFollowToCSV(); // Exporta os conjuntos FIRST e FOLLOW para CSV
 
    std::cout << "Programa válido!\n";
    return 0;

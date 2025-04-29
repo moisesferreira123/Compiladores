@@ -1,88 +1,80 @@
 #include "module/LL1Table.hpp"
 #include <iostream>
 
-LL1Table::LL1Table(const Grammar& grammar, const FirstFollowCalculator& calculator)
-    : grammar(grammar), calculator(calculator) {
+
+LL1Table::LL1Table() : grammar(), calculator(grammar) {
     buildTable();
-}   
+    // Inicializa grammar normalmente
+    // Inicializa calculator com referência a grammar
+}
 
-// LL1Table::getTable(){
+const std::unordered_map<std::pair<int, int>, std::vector<int>, pair_hash> LL1Table::getTable() const {
+    return parsingTable;
+}
 
-// }
-
-
-
-// void LL1Table::buildTable() {
-//     const auto& first = calculator.getFirst();    
-//     const auto& follow = calculator.getFollow();  
-
-//     // Percorre todas as produções da gramática
-//     for (const auto& pair : grammar.getProductionsMap()) {
-//         const auto& nonTerminal = pair.first;       // Não-terminal (lado esquerdo)
-//         const auto& productionList = pair.second;   // Lista de produções
-
-//         for (const auto& production : productionList) {
-//             // Caso 1: Se o primeiro símbolo do não-terminal não gera epsilon diretamente
-//             if (first.at(nonTerminal).find(EPSILON) == first.at(nonTerminal).end()) {
-//                 // Adiciona a produção à tabela para os terminais do FIRST do não-terminal
-//                 for (const auto& terminal : first.at(nonTerminal)) {
-//                     // Aqui você está associando a produção correta ao par (não-terminal, terminal)
-//                     table[{nonTerminal, terminal}] = &production;  
-//                 }
-//             } else {
-
-//                 for (const auto& terminal : first.at(nonTerminal)) {
-//                     // Aqui você está associando a produção correta ao par (não-terminal, terminal)
-//                     table[{nonTerminal, terminal}] = &production;  
-//                 }
-//                 // Caso 2: Produção gera epsilon (ou pode gerar epsilon indiretamente)
-//                 // Aqui você pode querer adicionar a produção epsilon aos terminais no FOLLOW
-//                 for (const auto& terminal : follow.at(nonTerminal)) {
-//                     // Adiciona a produção epsilon à tabela para os terminais no FOLLOW
-//                     table[{nonTerminal, terminal}] = &production;  
-//                 }
-//                 // Se o símbolo "$" está no FOLLOW, também deve ser mapeado para a produção epsilon
-//                 // if (follow.at(nonTerminal).find("$") != follow.at(nonTerminal).end()) {
-//                 //     table[{nonTerminal, "$"}] = &production;
-//                 // }
-//             }
-//         }
-//     }
-// }
-
-
+bool LL1Table::existsToken(std::unordered_map<std::string, int>::iterator terminalIt, std::string symbol){
+    if (terminalIt == terminalToToken.end()) {
+        std::cerr << "Erro: simbolo não encontrado no terminalToToken: " << symbol << std::endl;
+        return false;
+    }
+    return true;
+}
 
 void LL1Table::buildTable() {
-    // const auto& first = calculator.getFirst();    
-    const auto& follow = calculator.getFollow();  
+    const auto& follow = calculator.getFollow();
 
     for (const auto& pair : grammar.getProductionsMap()) {
         const auto& nonTerminal = pair.first;
         const auto& productionList = pair.second;
 
+        // Verifica se o não-terminal está no terminalToToken
+        auto lhsIt = terminalToToken.find(nonTerminal);
+        int lhsInt = lhsIt->second;
+
         for (const auto& production : productionList) {
             std::vector<std::string> symbols = production.symbols;
 
-            // Calcula FIRST da sequência da produção
+            // Calcula o FIRST da sequência da produção
             auto firstSet = calculator.computeFirstSequence(symbols);
+
+            // Para cada terminal no FIRST (exceto EPSILON)
+            for (const auto& terminal : firstSet) {
+                if (terminal == EPSILON) continue;
+
+                auto terminalIt = terminalToToken.find(terminal);
+                if(!existsToken(terminalIt, terminal)) continue; // Chama a função teste com o iterator
+
+                // Cria o vetor RHS
+                std::vector<int> rhs;
+                for (const auto& sym : symbols) {
+                    auto symIt = terminalToToken.find(sym);
+
+                    if(!existsToken(symIt, terminal)) continue;
+                    rhs.insert(rhs.begin(), symIt->second); // Adiciona o símbolo no inicio do vetor
+
+                }
+
+                table[{nonTerminal, terminal}] = &production;
+                parsingTable[{lhsInt, terminalIt->second}] = rhs;
+            }
 
             bool derivesEpsilon = (firstSet.find(EPSILON) != firstSet.end());
 
-            for (const auto& terminal : firstSet) {
-                if (terminal != EPSILON) {
-                    table[{nonTerminal, terminal}] = &production;
-                }
-            }
-
+            // Se a produção gera EPSILON
             if (derivesEpsilon) {
-                for (const auto& terminal : follow.at(nonTerminal)) {
+                auto followIt = follow.find(nonTerminal);
+
+                for (const auto& terminal : followIt->second) {
+                    auto terminalIt = terminalToToken.find(terminal);
                     table[{nonTerminal, terminal}] = &production;
+
+                    // Agora adiciona RHS contendo só o EPSILON
+                    parsingTable[{lhsInt, terminalIt->second}] = { terminalToToken.at(EPSILON) };
                 }
             }
         }
     }
 }
-
 
 void LL1Table::exportTableToCSV() const {
     std::ofstream csvFile(TABLE_FILE_PATH);
@@ -143,3 +135,58 @@ std::string LL1Table::formatProduction(const Production& production) const {
     return formatted;
 }
 
+
+void LL1Table::exportParsingTableToCSV() const {
+    std::ofstream csvFile(PARSING_TABLE_FILE_PATH);
+    
+    if (!csvFile.is_open()) {
+        throw std::runtime_error("Não foi possível abrir o arquivo " + PARSING_TABLE_FILE_PATH + " para escrita");
+    }
+
+    // Obtém todos os não-terminais e terminais únicos
+    std::set<int> allNonTerminals;
+    std::set<int> allTerminals;
+    
+    for (const auto& entry : parsingTable) {
+        allNonTerminals.insert(entry.first.first);
+        allTerminals.insert(entry.first.second);
+    }
+
+    // Escreve o cabeçalho do CSV
+    csvFile << "NT/T";
+    for (const auto& terminal : allTerminals) {
+        csvFile << "," << terminal;
+    }
+    csvFile << "\n";
+
+    // Escreve os dados para cada não-terminal
+    for (const auto& nonTerminal : allNonTerminals) {
+        csvFile << nonTerminal;
+        
+        for (const auto& terminal : allTerminals) {
+            auto it = parsingTable.find({nonTerminal, terminal});
+            if (it != parsingTable.end()) {
+                csvFile << ",\"";
+                const auto& production = it->second;
+                if (production.empty()) {
+                    csvFile << "ε";
+                } else {
+                    for (size_t i = 0; i < production.size(); ++i) {
+                        if (i > 0) csvFile << " ";
+                        csvFile << production[i];
+                    }
+                }
+                csvFile << "\"";
+            } else {
+                csvFile << ",";  // Célula vazia
+            }
+        }
+        csvFile << "\n";
+    }
+
+    csvFile.close();
+}
+
+void LL1Table::exportFirstAndFollowToCSV() const {
+    calculator.exportFirstAndFollowToCSV(); // Exporta os conjuntos FIRST e FOLLOW para CSV
+}

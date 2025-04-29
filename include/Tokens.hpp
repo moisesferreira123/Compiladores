@@ -53,7 +53,9 @@ enum Tokens {
    INT_LITERAL,
    FLOAT_LITERAL,
    STRING_LITERAL,
-   TOKEN_ERRO
+   TOKEN_ERRO,
+   TOKEN_CIPHER, //CIFRÃO
+   TOKEN_EPSILON,  
 };
 
 enum NonTerminalTokens {

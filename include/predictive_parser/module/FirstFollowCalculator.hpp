@@ -10,8 +10,6 @@
  
 
 
-static const std::string FIRST_FILE_PATH = "output/first-table.csv"; 
-static const std::string FOLLOW_FILE_PATH = "output/follow-table.csv"; 
 const std::string FILE_PATH_FF = "output/first_follow_table.csv"; // novo caminho único
 
 
@@ -22,7 +20,7 @@ class FirstFollowCalculator {
     std::unordered_map<std::string, std::set<std::string>> follow;
     
     
-    public:
+public:
     const std::unordered_map<std::string, std::set<std::string>>& getFirst() const;
     const std::unordered_map<std::string, std::set<std::string>>& getFollow() const;
     
@@ -33,11 +31,7 @@ class FirstFollowCalculator {
     void computeFollow();
     void printFirst() const;
     void printFollow() const;
-    void exportFirstToCSV() const;
-    void exportFollowToCSV() const;
     void exportFirstAndFollowToCSV() const;
-
-
     bool firstContainsEpsilon(const std::set<std::string>& firstSet) const;
 
 

@@ -2,10 +2,10 @@
 #define PREDICTIVE_PARSER_HPP
 
 #include "LL1Table.hpp"
+#include "HashUtil.hpp"
 #include <stack>
 #include <string>
 #include <vector>
-#include "HashUtil.hpp"
 
 
 class PredictiveParser {

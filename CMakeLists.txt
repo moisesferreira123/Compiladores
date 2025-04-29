@@ -9,12 +9,13 @@ include_directories(include)
 
 # Arquivos fonte
 set(SOURCES
-    main.cpp
-    # include/parser/Parser.cpp
+# include/parser/Parser.cpp
     include/predictive_parser/Grammar.cpp
     include/predictive_parser/FirstFollowCalculator.cpp
+    include/mapper/Mapper.cpp
     include/predictive_parser/LL1Table.cpp
     include/lexical_analyzer/lex.yy.cc
+    main.cpp
 )
 
 # Cria o executável
