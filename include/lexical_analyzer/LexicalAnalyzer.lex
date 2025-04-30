@@ -87,6 +87,9 @@ of                                      { numCols += yyleng; return TOKEN_OF; }
                                         std::cerr << "Erro léxico na linha " << numLines << ", coluna " << numCols << ": '" << YYText() << "'\n";
                                         return TOKEN_ERRO;
 }
+<<EOF>> {
+    return TOKEN_CIPHER;
+}
 
 %%
 
