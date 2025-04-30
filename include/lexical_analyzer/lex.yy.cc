@@ -990,14 +990,18 @@ YY_RULE_SETUP
                                         return TOKEN_ERRO;
 }
 	YY_BREAK
+case YY_STATE_EOF(INITIAL):
+#line 89 "LexicalAnalyzer.lex"
+{
+    return TOKEN_CIPHER;
+}
+	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 90 "LexicalAnalyzer.lex"
+#line 93 "LexicalAnalyzer.lex"
 ECHO;
 	YY_BREAK
-#line 998 "lex.yy.cc"
-case YY_STATE_EOF(INITIAL):
-	yyterminate();
+#line 1004 "lex.yy.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1958,7 +1962,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 90 "LexicalAnalyzer.lex"
+#line 93 "LexicalAnalyzer.lex"
 
 
 int yyFlexLexer::yywrap() {

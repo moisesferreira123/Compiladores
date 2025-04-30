@@ -2,7 +2,8 @@
 #define TOKENS_HPP
 
 enum Tokens {
-   TOKEN_INT = 360,
+   FIRST_TOKEN,
+   TOKEN_INT,
    TOKEN_FLOAT,
    TOKEN_STRING,
    TOKEN_BOOL,
@@ -54,11 +55,13 @@ enum Tokens {
    FLOAT_LITERAL,
    STRING_LITERAL,
    TOKEN_ERRO,
-   TOKEN_CIPHER, //CIFRÃO
-   TOKEN_EPSILON,  
+   TOKEN_CIPHER, // CIFRÃO
+   TOKEN_EPSILON,
+   LAST_TOKEN,
 };
 
 enum NonTerminalTokens {
+   FIRST_TOKEN_NT = 360,
    PROGRAM,
    PROGRAM_DECL,
    PROGRAM_DECL_,
@@ -143,7 +146,8 @@ enum NonTerminalTokens {
    ELSE_STMT,
    WHILE_STMT,
    RETURN_STMT,
-   TYPE
+   TYPE,
+   LAST_TOKEN_NT
 };
 
 #endif // TOKENS_HPP

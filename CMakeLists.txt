@@ -14,6 +14,7 @@ set(SOURCES
     include/predictive_parser/FirstFollowCalculator.cpp
     include/mapper/Mapper.cpp
     include/predictive_parser/LL1Table.cpp
+    include/predictive_parser/PredictiveParser.cpp
     include/lexical_analyzer/lex.yy.cc
     main.cpp
 )
