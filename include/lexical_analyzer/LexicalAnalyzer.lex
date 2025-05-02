@@ -2,6 +2,7 @@
 #include "../symbol_table/SymbolTable.hpp"
 #include "../symbol_table/Symbol.hpp"
 #include "../Tokens.hpp"
+#include <string>
 
 int numLines = 1; 
 int numCols = 0;
@@ -68,8 +69,18 @@ of                                      { numCols += yyleng; return TOKEN_OF; }
 "{"                                     { numCols += yyleng; return TOKEN_OPEN_BRACES; }
 "}"                                     { numCols += yyleng; return TOKEN_CLOSE_BRACES; }
 
-"//"{COMMENT_SL}                        { numCols += yyleng; return TOKEN_SINGLE_LINE_COMMENT; }
-"(*"{COMMENT_ML}"*)"                   { numCols += yyleng; return TOKEN_MULTIPLE_LINE_COMMENT; }
+"//"{COMMENT_SL}                        { numCols += yyleng;  }
+"(*"{COMMENT_ML}"*)"                   { 
+    std::string comment(yytext, yyleng);
+    for (char c : comment) {
+        if (c == '\n') {
+            ++numLines;
+            numCols = 1;  // coluna reinicia após uma nova linha
+        } else {
+            ++numCols;
+        }
+    }
+}
 
 {LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*) {
                                         numCols += yyleng;
