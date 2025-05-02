@@ -47,7 +47,14 @@ bool PredictiveParser::isValid() {
          match(top);
          tokens.pop();
       } else if (isNonTerminal(top)) {
-         auto production = productions.at({ top, lookahead });
+         std::vector<int> production;
+         
+         try {
+            production = productions.at({ top, lookahead });
+         } catch (std::out_of_range) {
+            std::cerr << "ERROR: Não existe a produção esperada.\n";
+            return false;
+         }
 
          if (production.empty()) {
             std::cerr << "ERROR: Não existe a produção esperada.\n";

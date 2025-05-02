@@ -35,7 +35,7 @@ std::unordered_map<std::string, int> terminalToToken {
     {"<=", TOKEN_COMP},
     {">", TOKEN_COMP},
     {">=", TOKEN_COMP},
-    {"=", TOKEN_COMP},
+    {"=", TOKEN_EQUAL},
     {"<>", TOKEN_COMP},
     {"+", TOKEN_ADD},
     {"-", TOKEN_SUB},
