@@ -31,7 +31,15 @@ void yyerror(char const* s);
 %%
    prog:
       TOKEN_PROGRAM NAME TOKEN_BEGIN decl_block TOKEN_END
-   decl_block:
+   decl:
+      var_decl
+      | proc_decl
+      | rec_decl
+      | enum_decl
+   
+   var_decl:
+      TOKEN_VAR NAME TOKEN_COLON type var_decl_2
+      | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp
 %%
 
 void yyerror( char const* s) {
