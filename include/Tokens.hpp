@@ -2,7 +2,7 @@
 #define TOKENS_HPP
 
 enum Tokens {
-   FIRST_TOKEN,
+   FIRST_TOKEN = 300,
    TOKEN_INT,
    TOKEN_FLOAT,
    TOKEN_STRING,
@@ -62,7 +62,7 @@ enum Tokens {
 };
 
 enum NonTerminalTokens {
-   FIRST_TOKEN_NT = 360,
+   FIRST_TOKEN_NT = 600,
    PROGRAM,
    PROGRAM_DECL,
    PROGRAM_DECL_,
