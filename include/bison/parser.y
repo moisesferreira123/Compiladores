@@ -14,9 +14,8 @@ void yyerror(char const* s);
 %token TOKEN_OF TOKEN_AND TOKEN_OR TOKEN_COMP TOKEN_ADD TOKEN_SUB TOKEN_MULT
 %token TOKEN_DIV TOKEN_POT TOKEN_ATTRIBUTION TOKEN_COLON TOKEN_OPEN_PARENTHESIS
 %token TOKEN_CLOSE_PARENTHESIS TOKEN_SEMICOLON TOKEN_COMMA TOKEN_DOT TOKEN_OPEN_BRACES
-%token TOKEN_CLOSE_BRACES TOKEN_SINGLE_LINE_COMMENT TOKEN_MULTIPLE_LINE_COMMENT
-%token NAME INT_LITERAL FLOAT_LITERAL STRING_LITERAL TOKEN_ERRO TOKEN_EQUAL
-%token TOKEN_CIPHER TOKEN_EPSILON
+%token TOKEN_CLOSE_BRACES
+%token NAME INT_LITERAL FLOAT_LITERAL STRING_LITERAL TOKEN_EQUAL
 
 /// PRECEDÊNCIA
 %left TOKEN_OR
@@ -115,10 +114,16 @@ void yyerror(char const* s);
       ;
 
    exp:
-      exp log_op exp
+      exp TOKEN_AND exp
+      | exp TOKEN_OR exp
       | TOKEN_NOT exp
-      | exp rel_op exp
-      | exp arith_op exp
+      | exp TOKEN_COMP exp
+      | exp TOKEN_EQUAL exp
+      | exp TOKEN_ADD exp
+      | exp TOKEN_SUB exp
+      | exp TOKEN_MULT exp
+      | exp TOKEN_DIV exp
+      | exp TOKEN_POT exp
       | literal
       | call_stmt
       | TOKEN_NEW NAME
@@ -140,24 +145,6 @@ void yyerror(char const* s);
    var:
       NAME
       | exp TOKEN_DOT NAME
-      ;
-
-   log_op:
-      TOKEN_AND
-      | TOKEN_OR
-      ;
-
-   rel_op:
-      TOKEN_COMP
-      | TOKEN_EQUAL
-      ;
-
-   arith_op:
-      TOKEN_ADD
-      | TOKEN_SUB
-      | TOKEN_MULT
-      | TOKEN_DIV
-      | TOKEN_POT
       ;
 
    literal:
