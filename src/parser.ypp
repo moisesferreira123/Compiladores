@@ -1,0 +1,68 @@
+%require "3.2"
+%language "c++"
+
+%define api.parser.class {Parser}
+%define api.value.type variant
+%define api.token.raw
+%define api.token.constructor
+
+%define parse.assert
+%define parse.trace
+%define parse.error detailed
+%define parse.lac full
+
+%locations
+
+%param {yy::Scanner &scanner}
+
+%code requires {
+   #include <string>
+
+   namespace yy {
+      class Scanner;
+   }
+}
+
+%code {
+   #include "scanner.hpp"
+
+   yy::Parser::symbol_type yylex(yy::Scanner &scanner) {
+      return scanner.scan();
+   }
+}
+
+%token ADD "+"
+%token MINUS "-"
+%token MULT "*"
+%token DIV "/"
+%token POT "^"
+
+%token OP "("
+%token CP ")"
+
+%token <std::string> NAME
+
+%left "+"
+%left "*"
+%right "^"
+%right UMINUS
+
+%start exp
+
+%%
+
+exp: 
+   exp ADD exp
+|  exp MINUS exp
+|  exp MULT exp
+|  exp DIV exp
+|  exp POT exp
+|  MINUS exp %prec UMINUS
+|  OP exp CP
+|  NAME
+
+%%
+
+void yy::Parser::error(const location_type& loc, const std::string& msg) {
+    std::cerr << loc << " error: " << msg << std::endl;
+}

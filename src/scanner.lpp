@@ -1,0 +1,41 @@
+%option c++
+%option warn debug
+%option yyclass="Scanner"
+%option case-insensitive
+%option noyywrap nounput noinput nodefault
+
+%top{
+#include <cstdint>
+}
+
+%{
+#include "scanner.hpp"
+#include "parser.hpp"
+
+#define YY_USER_ACTION  loc.columns(YYLeng());
+%}
+
+DIGIT     [0-9]
+LETTER    [a-zA-Z]
+
+%x COMMENT
+%s BTWMODE
+
+%%
+
+%{
+    loc.step();
+%}
+
+\r\n|\r|\n|\n\r { loc.lines(1); loc.step(); }
+
+ADD  { return yy::Parser::make_ADD(loc); }
+MINUS { return yy::Parser::make_MINUS(loc); }
+MULT { return yy::Parser::make_MULT(loc); }
+DIV { return yy::Parser::make_DIV(loc); }
+POT { return yy::Parser::make_POT(loc); }
+OP { return yy::Parser::make_OP(loc); }
+CP { return yy::Parser::make_CP(loc); }
+{LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*) { return yy::Parser::make_NAME(loc); }
+
+%%
