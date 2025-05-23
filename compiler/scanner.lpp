@@ -18,24 +18,26 @@
 DIGIT     [0-9]
 LETTER    [a-zA-Z]
 
-%x COMMENT
 %s BTWMODE
 
 %%
 
-%{
-    loc.step();
-%}
-
 \r\n|\r|\n|\n\r { loc.lines(1); loc.step(); }
+[ \t]          { loc.step(); }
 
-ADD  { return yy::Parser::make_ADD(loc); }
-MINUS { return yy::Parser::make_MINUS(loc); }
-MULT { return yy::Parser::make_MULT(loc); }
-DIV { return yy::Parser::make_DIV(loc); }
-POT { return yy::Parser::make_POT(loc); }
-OP { return yy::Parser::make_OP(loc); }
-CP { return yy::Parser::make_CP(loc); }
-{LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*) { return yy::Parser::make_NAME(loc); }
+"+"            { return yy::Parser::make_ADD(loc); }
+"-"            { return yy::Parser::make_MINUS(loc); }
+"*"            { return yy::Parser::make_MULT(loc); }
+"/"            { return yy::Parser::make_DIV(loc); }
+"^"            { return yy::Parser::make_POT(loc); }
+"("            { return yy::Parser::make_OP(loc); }
+")"            { return yy::Parser::make_CP(loc); }
+
+{LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*) {
+    return yy::Parser::make_NAME(YYText(), loc);
+}
+
+.              { return yy::Parser::make_YYUNDEF(loc); }
+<<EOF>>        { return yy::Parser::make_YYEOF(loc); }
 
 %%
