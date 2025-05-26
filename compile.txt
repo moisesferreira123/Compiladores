@@ -1,0 +1,5 @@
+bison -d exp.y
+flex exp.l
+g++ -c symbol_table.cpp
+g++ -c main.cpp
+g++ exp.tab.c lex.yy.c symbol_table.o main.o -o exp -std=c++17 -lfl
