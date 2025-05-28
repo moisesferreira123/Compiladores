@@ -11,6 +11,10 @@ extern YYSTYPE yylval;
 // Inclui C++ após extern "C"
 #include "symbol_table.hpp"
 
+// Contadores
+int numLines = 1; 
+int numCols = 0;
+
 // Declara que existe uma instância global da tabela de símbolos
 extern SymbolTable symbolTable;
 %}
