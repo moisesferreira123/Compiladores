@@ -109,8 +109,8 @@ of                                      { numCols += yyleng; return TOKEN_OF; }
 {WHITESPACE}                            { numCols += yyleng; /* ignora espaços */ }
 .                                       { 
                                         numCols += yyleng;
-                                        std::cerr << "Erro léxico na linha " << numLines << ", coluna " << numCols << ": '" << YYText() << "'\n";
-                                        return TOKEN_ERRO;
+                                        std::cerr << "Erro léxico na linha " << numLines << ", coluna " << numCols << ": '" << yytext << "'\n";
+                                        return TOKEN_ERROR;
 }
 <<EOF>> {
     return TOKEN_CIPHER;
