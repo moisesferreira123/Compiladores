@@ -277,21 +277,31 @@ of {
 
 {LETTER}((({LETTER}|{DIGIT}|_)*_({LETTER}|{DIGIT})+)|({LETTER}|{DIGIT})*) { 
     numCols += yyleng; 
+    yylval.nval = strdup(yytext); 
     return NAME; 
 }
 
 {DIGIT}+ { 
     numCols += yyleng; 
+    yylval.ival = atoi(yytext);   // atribui valor inteiro
     return INT_LITERAL; 
 }
 
 {DIGIT}+("."{DIGIT}+)?(e(-|"+")?{DIGIT}+)? { 
     numCols += yyleng; 
+    yylval.fval = atof(yytext);   // atribui valor float
     return FLOAT_LITERAL; 
 }
 
 \"[^\n\t\r]*\" { 
     numCols += yyleng; 
+    // copia o conteúdo da string removendo as aspas
+    int len = yyleng - 2; // desconta as aspas
+    yylval.sval = (char*) malloc(len + 1);
+    if (yylval.sval) {
+        strncpy(yylval.sval, yytext + 1, len);
+        yylval.sval[len] = '\0';
+    }
     return STRING_LITERAL; 
 }
 

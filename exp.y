@@ -1,22 +1,35 @@
 %{
 #include <iostream>
+#include "symbol_table.hpp"
 
 extern int numLines;
 extern int numCols;
+extern SymbolTable symbolTable;
 
 int yylex(void);
 void yyerror(char const* s);
 %}
 
+%union {
+    int ival;
+    float fval;
+    char* nval;
+    char* sval;
+}
+
 /// TOKENS
-%token TOKEN_INT TOKEN_FLOAT TOKEN_STRING TOKEN_BOOL TOKEN_PROGRAM TOKEN_PROCEDURE
+%token <ival> TOKEN_INT
+%token <fval> TOKEN_FLOAT
+%token <sval> TOKEN_STRING
+%token <nval> NAME
+%token TOKEN_BOOL TOKEN_PROGRAM TOKEN_PROCEDURE
 %token TOKEN_BEGIN TOKEN_END TOKEN_VAR TOKEN_IN TOKEN_STRUCT  TOKEN_NULL
 %token TOKEN_NEW TOKEN_REF TOKEN_DEREF TOKEN_TRUE TOKEN_FALSE TOKEN_IF TOKEN_THEN
 %token TOKEN_ELSE TOKEN_FI TOKEN_WHILE TOKEN_DO TOKEN_OD TOKEN_RETURN TOKEN_ENUM
 %token TOKEN_ATTRIBUTION TOKEN_COLON TOKEN_OPEN_PARENTHESIS TOKEN_OF
 %token TOKEN_CLOSE_PARENTHESIS TOKEN_SEMICOLON TOKEN_COMMA TOKEN_OPEN_BRACES
 %token TOKEN_CLOSE_BRACES TOKEN_CIPHER TOKEN_ERROR
-%token NAME INT_LITERAL FLOAT_LITERAL STRING_LITERAL 
+%token INT_LITERAL FLOAT_LITERAL STRING_LITERAL
 
 /// PRECEDÊNCIA
 %left TOKEN_OR
@@ -33,8 +46,13 @@ void yyerror(char const* s);
 
 %%
    prog:
-      TOKEN_PROGRAM NAME TOKEN_BEGIN decl_block TOKEN_END
-      ;
+      TOKEN_PROGRAM NAME TOKEN_BEGIN decl_block TOKEN_END {
+        // $2 é o NAME -> yylval.sval vindo do lexer
+        Symbol sym = Symbol(std::string($2), SymbolType::PROGRAM);
+        symbolTable.insert(sym);  // Insere na tabela de símbolos
+        free($2);                // Libera memória alocada por strdup
+    }
+    ;
 
    decl:
       var_decl
@@ -44,9 +62,17 @@ void yyerror(char const* s);
       ;
    
    var_decl:
-      TOKEN_VAR NAME TOKEN_COLON type var_decl2
-      | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp
-      ;
+      TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
+        Symbol sym = Symbol(std::string($2), SymbolType::VARIABLE);
+        symbolTable.insert(sym);  // Insere na tabela de símbolos
+        free($2);    
+      }
+      | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
+        Symbol sym = Symbol(std::string($2), SymbolType::VARIABLE);
+        symbolTable.insert(sym);  // Insere na tabela de símbolos
+        free($2);    
+      };
+
 
    var_decl2:
       exp

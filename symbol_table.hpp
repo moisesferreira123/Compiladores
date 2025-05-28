@@ -6,45 +6,75 @@
 #include <unordered_map>
 
 // Representa os tipos possíveis de tokens/símbolos
-enum class SymbolType { VARIABLE, FUNCTION, CONSTANT, KEYWORD, OPERATOR, TYPE };
+enum class SymbolType { VARIABLE, PROGRAM };
 
 // Estrutura que armazena informações sobre um símbolo
 struct Symbol {
    std::string name;
    SymbolType type;
-   std::string dataType; // Exemplo: int, float, etc.
-   int scopeLevel; // Nível de escopo
-   int memoryAddress; // Endereço ou offset
 
+   Symbol(std::string const& name, SymbolType type) : name(name), type(type) { }
+};
+
+// Nó da Árvore de escopos
+class Node {
+   private:
+   std::unordered_map<std::string, Symbol> table;
+   Node* father;
+
+   public:
+   Node(Node* father) : father(father) { }
+   void insert(Symbol const& symbol) { table.insert({ symbol.name, symbol }); }
+   Symbol* lookup(std::string const& name) {
+      auto it = table.find(name);
+      if (it != table.end()) {
+         return &(it->second);
+      }
+      if (father != nullptr) {
+         return father->lookup(name);
+      }
+      return nullptr;
+   }
+   Node* getFather() { return father; }
    void print() const {
-      std::cout << "Name: " << name << ", Type: " << static_cast<int>(type)
-                << ", DataType: " << dataType << ", Scope: " << scopeLevel
-                << ", Address: " << memoryAddress << std::endl;
+      for (const auto& pair : table) {
+         std::cout << "Symbol: " << pair.second.name
+                   << ", Type: " << static_cast<int>(pair.second.type)
+                   << std::endl;
+      }
+      if (father != nullptr) {
+         father->print();
+      }
    }
 };
 
 // Tabela de símbolos
 class SymbolTable {
    private:
-   std::unordered_map<std::string, Symbol> table;
+   Node* current;
 
    public:
-   void insert(const Symbol& symbol) { table[symbol.name] = symbol; }
+   SymbolTable() : current(new Node(nullptr)) { }
 
-   Symbol* lookup(const std::string& name) {
-      auto it = table.find(name);
-      if (it != table.end()) {
-         return &(it->second);
-      }
-      return nullptr;
+   void insert(Symbol const& symbol) {
+      current->insert(symbol);
+      current->print();
+      std::cout << "\n";
    }
 
-   void remove(const std::string& name) { table.erase(name); }
+   void enterScope() { current = new Node(current); }
 
-   void printAll() const {
-      for (const auto& pair : table) {
-         pair.second.print();
+   void exitScope() {
+      Node* tmp = current->getFather();
+      delete current;
+      current = tmp;
+   }
+
+   Symbol* lookup(std::string const& name) {
+      if (current == nullptr) {
+         return nullptr;
       }
+      return current->lookup(name);
    }
 };
 
