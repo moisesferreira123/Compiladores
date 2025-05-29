@@ -18,9 +18,9 @@ void yyerror(char const* s);
 }
 
 /// TOKENS
-%token <ival> TOKEN_INT
-%token <fval> TOKEN_FLOAT
-%token <sval> TOKEN_STRING
+%token <ival> INT_LITERAL
+%token <fval> FLOAT_LITERAL
+%token <sval> STRING_LITERAL
 %token <nval> NAME
 %token TOKEN_BOOL TOKEN_PROGRAM TOKEN_PROCEDURE
 %token TOKEN_BEGIN TOKEN_END TOKEN_VAR TOKEN_IN TOKEN_STRUCT  TOKEN_NULL
@@ -29,7 +29,7 @@ void yyerror(char const* s);
 %token TOKEN_ATTRIBUTION TOKEN_COLON TOKEN_OPEN_PARENTHESIS TOKEN_OF
 %token TOKEN_CLOSE_PARENTHESIS TOKEN_SEMICOLON TOKEN_COMMA TOKEN_OPEN_BRACES
 %token TOKEN_CLOSE_BRACES TOKEN_CIPHER TOKEN_ERROR
-%token INT_LITERAL FLOAT_LITERAL STRING_LITERAL
+%token TOKEN_INT TOKEN_FLOAT TOKEN_STRING
 
 /// PRECEDÊNCIA
 %left TOKEN_OR
@@ -137,9 +137,9 @@ void yyerror(char const* s);
          symbolTable.insert(sym);
          free($2);
       } TOKEN_EQUAL TOKEN_OPEN_BRACES NAME {
-         Symbol sym = Symbol(std::string($3), SymbolType::VARIABLE);
+         Symbol sym = Symbol(std::string($6), SymbolType::VARIABLE);
          symbolTable.insert(sym);
-         free($3);
+         free($6);
       } enum_field TOKEN_CLOSE_BRACES TOKEN_OF type
       ;
 
@@ -217,7 +217,7 @@ void yyerror(char const* s);
       | exp TOKEN_DOT NAME {
          auto sym = symbolTable.lookup(std::string($3));
          if (!sym) {
-            yyerror(("Identificador não declarado: " + std::string($1)).c_str());
+            yyerror(("Identificador não declarado: " + std::string($3)).c_str());
          }
          free($3);
       }

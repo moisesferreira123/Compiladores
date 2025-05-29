@@ -58,11 +58,11 @@ class SymbolTable {
 
    void insert(Symbol const& symbol) {
       current->insert(symbol);
-      current->print();
-      std::cout << "\n";
    }
 
-   void enterScope() { current = new Node(current); }
+   void enterScope() {
+      current = new Node(current);
+   }
 
    void exitScope() {
       Node* tmp = current->getFather();
@@ -78,4 +78,4 @@ class SymbolTable {
    }
 };
 
-#endif SYMBOL_TABLE_HPP
+#endif /// SYMBOL_TABLE_HPP
