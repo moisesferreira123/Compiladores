@@ -46,12 +46,11 @@ void yyerror(char const* s);
 
 %%
    prog:
-      TOKEN_PROGRAM NAME TOKEN_BEGIN decl_block TOKEN_END {
-        // $2 é o NAME -> yylval.sval vindo do lexer
-        Symbol sym = Symbol(std::string($2), SymbolType::PROGRAM);
-        symbolTable.insert(sym);  // Insere na tabela de símbolos
-        free($2);                // Libera memória alocada por strdup
-    }
+      TOKEN_PROGRAM NAME {
+         Symbol sym = Symbol(std::string($2), SymbolType::PROGRAM);
+         symbolTable.insert(sym);
+         free($2);
+    } TOKEN_BEGIN decl_block TOKEN_END 
     ;
 
    decl:
@@ -62,16 +61,16 @@ void yyerror(char const* s);
       ;
    
    var_decl:
-      TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
+      TOKEN_VAR NAME {
         Symbol sym = Symbol(std::string($2), SymbolType::VARIABLE);
-        symbolTable.insert(sym);  // Insere na tabela de símbolos
+        symbolTable.insert(sym);
         free($2);    
-      }
-      | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
+      } TOKEN_COLON type var_decl2 
+      | TOKEN_VAR NAME {
         Symbol sym = Symbol(std::string($2), SymbolType::VARIABLE);
-        symbolTable.insert(sym);  // Insere na tabela de símbolos
+        symbolTable.insert(sym);
         free($2);    
-      };
+      } TOKEN_ATTRIBUTION exp;
 
 
    var_decl2:
@@ -80,11 +79,25 @@ void yyerror(char const* s);
       ;
 
    proc_decl:
-      TOKEN_PROCEDURE NAME TOKEN_OPEN_PARENTHESIS params TOKEN_CLOSE_PARENTHESIS pdt TOKEN_BEGIN pd2 stmt_list TOKEN_END
+      TOKEN_PROCEDURE NAME {
+         Symbol sym = Symbol(std::string($2), SymbolType::PROCEDURE);
+         symbolTable.insert(sym);
+         free($2);
+         symbolTable.enterScope();
+      } TOKEN_OPEN_PARENTHESIS params TOKEN_CLOSE_PARENTHESIS pdt TOKEN_BEGIN pd2 stmt_list TOKEN_END {
+         symbolTable.exitScope();
+      }
       ;
    
    rec_decl:
-      TOKEN_STRUCT NAME TOKEN_OPEN_BRACES params TOKEN_CLOSE_BRACES
+      TOKEN_STRUCT NAME {
+         Symbol sym = Symbol(std::string($2), SymbolType::STRUCT);
+         symbolTable.insert(sym);
+         free($2);
+         symbolTable.enterScope();
+      } TOKEN_OPEN_BRACES params TOKEN_CLOSE_BRACES {
+         symbolTable.exitScope();
+      }
       ;
 
    params:
@@ -119,16 +132,32 @@ void yyerror(char const* s);
       ;
 
    enum_decl: 
-      TOKEN_ENUM NAME TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES TOKEN_OF type
+      TOKEN_ENUM NAME {
+         Symbol sym = Symbol(std::string($2), SymbolType::ENUM);
+         symbolTable.insert(sym);
+         free($2);
+      } TOKEN_EQUAL TOKEN_OPEN_BRACES NAME {
+         Symbol sym = Symbol(std::string($3), SymbolType::VARIABLE);
+         symbolTable.insert(sym);
+         free($3);
+      } enum_field TOKEN_CLOSE_BRACES TOKEN_OF type
       ;
 
    enum_field:
-      TOKEN_COMMA NAME enum_field
+      TOKEN_COMMA NAME {
+         Symbol sym = Symbol(std::string($2), SymbolType::VARIABLE);
+         symbolTable.insert(sym);
+         free($2);
+      } enum_field 
       | 
       ;
 
    pf_decl:
-      NAME TOKEN_COLON type
+      NAME {
+         Symbol sym = Symbol(std::string($1), SymbolType::VARIABLE);
+         symbolTable.insert(sym);
+         free($1);
+      } TOKEN_COLON type
       ;
 
    stmt_list:
@@ -154,7 +183,13 @@ void yyerror(char const* s);
       | exp TOKEN_POT exp
       | literal
       | call_stmt
-      | TOKEN_NEW NAME
+      | TOKEN_NEW NAME {
+         auto sym = symbolTable.lookup(std::string($2));
+         if (!sym || (sym->type != SymbolType::STRUCT && sym->type != SymbolType::ENUM)) {
+            yyerror(("Tipo não declarado ou inválido para NEW: " + std::string($2)).c_str());
+         }
+         free($2);
+      }
       | var
       | ref_var
       | deref_var
@@ -172,8 +207,20 @@ void yyerror(char const* s);
       ;
 
    var:
-      NAME
-      | exp TOKEN_DOT NAME
+      NAME {
+         auto sym = symbolTable.lookup(std::string($1));
+         if (!sym) {
+            yyerror(("Identificador não declarado: " + std::string($1)).c_str());
+         }
+         free($1);
+      }
+      | exp TOKEN_DOT NAME {
+         auto sym = symbolTable.lookup(std::string($3));
+         if (!sym) {
+            yyerror(("Identificador não declarado: " + std::string($1)).c_str());
+         }
+         free($3);
+      }
       ;
 
    literal:
@@ -225,7 +272,13 @@ void yyerror(char const* s);
       ;
 
    call_stmt:
-      NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS
+      NAME {
+         auto sym = symbolTable.lookup(std::string($1));
+         if (!sym) {
+            yyerror(("Identificador não declarado: " + std::string($1)).c_str());
+         }
+         free($1);
+      } TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS
       ;
 
    call_args:
@@ -243,7 +296,13 @@ void yyerror(char const* s);
       | TOKEN_INT
       | TOKEN_STRING
       | TOKEN_BOOL
-      | NAME
+      | NAME {
+         auto sym = symbolTable.lookup(std::string($1));
+         if (!sym || (sym->type != SymbolType::STRUCT && sym->type != SymbolType::ENUM)) {
+            yyerror(("Tipo não declarado ou inválido para type: " + std::string($1)).c_str());
+         }
+         free($1);
+      }
       | TOKEN_REF TOKEN_OPEN_PARENTHESIS type TOKEN_CLOSE_PARENTHESIS
       ;
 

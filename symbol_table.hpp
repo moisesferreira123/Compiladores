@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 // Representa os tipos possíveis de tokens/símbolos
-enum class SymbolType { VARIABLE, PROGRAM };
+enum class SymbolType { VARIABLE, PROGRAM, PROCEDURE, STRUCT, ENUM };
 
 // Estrutura que armazena informações sobre um símbolo
 struct Symbol {
@@ -78,4 +78,4 @@ class SymbolTable {
    }
 };
 
-#endif
+#endif SYMBOL_TABLE_HPP
