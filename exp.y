@@ -209,7 +209,7 @@ void yyerror(char const* s);
    var:
       NAME {
          auto sym = symbolTable.lookup(std::string($1));
-         if (!sym) {
+         if (!sym || sym->type != SymbolType::VARIABLE) {
             yyerror(("Identificador não declarado: " + std::string($1)).c_str());
          }
          free($1);
@@ -274,7 +274,7 @@ void yyerror(char const* s);
    call_stmt:
       NAME {
          auto sym = symbolTable.lookup(std::string($1));
-         if (!sym) {
+         if (!sym || sym->type != SymbolType::PROCEDURE) {
             yyerror(("Identificador não declarado: " + std::string($1)).c_str());
          }
          free($1);
