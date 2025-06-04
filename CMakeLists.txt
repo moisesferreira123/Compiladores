@@ -4,16 +4,17 @@ project(exp_compiler)
 set(CMAKE_CXX_STANDARD 17)
 
 # Diretórios
-set(SRC_DIR ${CMAKE_SOURCE_DIR})
+set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(BUILD_DIR ${CMAKE_BINARY_DIR})
+set(HEADERS_DIR ${SRC_DIR}/include)
 set(INTERMEDIATE_DIR ${BUILD_DIR}/intermediate)
 
 # Fontes
-set(SYMBOL_TABLE ${SRC_DIR}/symbol_table.cpp)
+set(SYMBOL_TABLE ${HEADERS_DIR}/symbol_table.cpp)
 set(MAIN ${SRC_DIR}/main.cpp)
 set(LEX ${SRC_DIR}/exp.l)
 set(YACC ${SRC_DIR}/exp.y)
-set(HEADERS ${SRC_DIR}/symbol_table.hpp)
+set(HEADERS ${HEADERS_DIR}/symbol_table.hpp)
 
 # Arquivos gerados
 set(LEX_C ${INTERMEDIATE_DIR}/lex.yy.c)
@@ -50,22 +51,22 @@ target_include_directories(symbol_table PUBLIC ${SRC_DIR})
 
 # Adicionar biblioteca para main
 add_library(main_obj OBJECT ${MAIN})
-target_include_directories(main_obj PUBLIC ${SRC_DIR})
+target_include_directories(main_obj PUBLIC ${HEADERS_DIR})
 
 # Compilar arquivos gerados
 add_library(lex_obj OBJECT ${LEX_C})
 add_library(yacc_obj OBJECT ${YACC_C})
 
 # Corrigir includes
-target_include_directories(lex_obj PRIVATE ${SRC_DIR} ${INTERMEDIATE_DIR})
-target_include_directories(yacc_obj PRIVATE ${SRC_DIR} ${INTERMEDIATE_DIR})
+target_include_directories(lex_obj PRIVATE ${HEADERS_DIR} ${INTERMEDIATE_DIR})
+target_include_directories(yacc_obj PRIVATE ${HEADERS_DIR} ${INTERMEDIATE_DIR})
 
 # Compilar executável
 add_executable(exp
     $<TARGET_OBJECTS:symbol_table>
     $<TARGET_OBJECTS:main_obj>
-    $<TARGET_OBJECTS:yacc_obj>
     $<TARGET_OBJECTS:lex_obj>
+    $<TARGET_OBJECTS:yacc_obj>
 )
 
 target_include_directories(exp PRIVATE ${SRC_DIR} ${INTERMEDIATE_DIR})
