@@ -8,6 +8,24 @@ extern SymbolTable symbolTable;
 
 int yylex(void);
 void yyerror(char const* s);
+
+typedef enum {
+   TYPE_NAME,
+   TYPE_INT,
+   TYPE_FLOAT,
+   TYPE_BOOL,
+   TYPE_REF
+} TypeKind;
+
+typedef struct {
+   TypeKind kind;
+   char* name;
+   struct Type* ref;
+} Type;
+
+typedef struct {
+   Type type;
+} Expr;
 %}
 
 %union {
@@ -15,6 +33,8 @@ void yyerror(char const* s);
     float fval;
     char* nval;
     char* sval;
+    Type type;
+    Expr expr;
 }
 
 /// TOKENS
@@ -43,6 +63,9 @@ void yyerror(char const* s);
 %right UMINUS
 
 %start prog
+
+/// Associação dos não terminais aos tipos
+%type <type> type
 
 %%
    prog:
@@ -292,19 +315,47 @@ void yyerror(char const* s);
       ;
 
    type:
-      TOKEN_FLOAT
-      | TOKEN_INT
-      | TOKEN_STRING
-      | TOKEN_BOOL
-      | NAME {
+      TOKEN_FLOAT {
+         $$ = new Type;
+         $$->kind = TYPE_FLOAT;
+         $$->name = nullptr;
+         $$->ref = nullptr;
+      }
+    | TOKEN_INT {
+         $$ = new Type;
+         $$->kind = TYPE_INT;
+         $$->name = nullptr;
+         $$->ref = nullptr;
+      }
+    | TOKEN_STRING {
+         $$ = new Type;
+         $$->kind = TYPE_STRING;
+         $$->name = nullptr;
+         $$->ref = nullptr;
+      }
+    | TOKEN_BOOL {
+         $$ = new Type;
+         $$->kind = TYPE_BOOL;
+         $$->name = nullptr;
+         $$->ref = nullptr;
+      }
+    | NAME {
          auto sym = symbolTable.lookup(std::string($1));
          if (!sym || (sym->type != SymbolType::STRUCT && sym->type != SymbolType::ENUM)) {
             yyerror(("Tipo não declarado ou inválido para type: " + std::string($1)).c_str());
          }
-         free($1);
+         $$ = new Type;
+         $$->kind = TYPE_NAME;
+         $$->name = $1;
+         $$->ref = nullptr;
       }
-      | TOKEN_REF TOKEN_OPEN_PARENTHESIS type TOKEN_CLOSE_PARENTHESIS
-      ;
+    | TOKEN_REF TOKEN_OPEN_PARENTHESIS type TOKEN_CLOSE_PARENTHESIS {
+         $$ = new Type;
+         $$->kind = TYPE_REF;
+         $$->name = nullptr;
+         $$->ref = $3;  // guarda o type referenciado
+      }
+    ;
 
 %%
 
