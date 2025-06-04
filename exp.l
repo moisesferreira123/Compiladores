@@ -13,6 +13,8 @@ int numLines = 1;
 int numCols = 0;
 %}
 
+%option noyywrap
+
 DIGIT [0-9]
 LETTER [a-zA-Z]
 WHITESPACE [ \t]
