@@ -2,6 +2,7 @@
 #include <iostream>
 #include <typeinfo>
 #include "symbol_table.hpp"
+#include <vector>
 
 extern int numLines;
 extern int numCols;
@@ -9,6 +10,10 @@ extern SymbolTable symbolTable;
 
 int yylex(void);
 void yyerror(char const* s);
+bool isSpecialType(Symbol* sym);
+bool isVariable(Symbol* sym);
+bool isStruct(Symbol* sym);
+bool isProcedure(Symbol* sym);
 
 typedef enum {
    TYPE_NAME,
@@ -17,6 +22,7 @@ typedef enum {
    TYPE_FLOAT,
    TYPE_BOOL,
    TYPE_STRING,
+   TYPE_NULL,
    TYPE_REF
 } TypeKind;
 
@@ -27,6 +33,10 @@ typedef struct {
 } Type;
 
 std::string getType(Type* type);
+Type* createPrimitiveType(TypeKind kind);
+Type* createNonPrimitiveType(std::string name);
+Type* createReferenceType(Type* refType);
+Type* createTypeByString(std::string name);
 
 typedef struct {
    Type type;
@@ -41,6 +51,7 @@ typedef struct {
     Type type;
     Expr expr;
     Procedure procedure;
+    std::vector<Type> args;
 }
 
 /// TOKENS
@@ -74,6 +85,12 @@ typedef struct {
 %type <type> type
 %type <type> return_type
 %type <type> paramfield_decl
+%type <type> literal
+%type <type> var
+%type <type> exp
+%type <type> call_stmt
+%type <args> call_args
+%type <args> call_args2
 %type <procedure> procedure_decl
 
 %%
@@ -98,7 +115,7 @@ typedef struct {
 
 
    var_decl2: // Variable declaration two
-      exp
+      TOKEN_ATTRIBUTION exp
       | /*Vazio*/
       ;
 
@@ -182,7 +199,9 @@ typedef struct {
          if ($3->kind == TYPE_NAME) {
             Symbol* symName = symbolTable.lookup(std::string($3->name));
 
-            if (!symName || symName) /// Verificar se é tipo struct ou enum (typeid)
+            if (nonIsSpecialType(symName)) {
+
+            } /// Verificar se é tipo struct ou enum (typeid)
          }
          Symbol sym = Variable(std::string($1),  ,getType($3))
       }
@@ -229,16 +248,49 @@ typedef struct {
       ;
 
    var: // Variable
-      NAME
-      | exp TOKEN_DOT NAME
+      NAME {
+         auto sym = symbolTable.lookup(std::string($1));
+         if (!isVariable(sym)) {
+            yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
+         }
+         $$ = createTypeByString(sym->getKind());
+      }
+      | exp TOKEN_DOT NAME {
+         if ($1->kind == TYPE_NAME) {
+            Symbol* symName = symbolTable.lookup(std::string($1->name));
+
+            if (!isStruct(symName)) {
+               yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
+            }
+
+            auto fields = symName->getFields();
+            if (fields.find(std::string($3)) == fields.end()) {
+               yyerror(("Campo não declarado para: " + getType($1)).c_str());
+            }
+            
+            $$ = createTypeByString(fields[std::string($3)]);
+         } else {
+            yyerror(("Tipo não inválido para var: " + getType($1)).c_str());
+         }
+      }
       ;
 
    literal: // Literal
-      FLOAT_LITERAL
-      | INT_LITERAL
-      | STRING_LITERAL
-      | bool_literal
-      | TOKEN_NULL
+      FLOAT_LITERAL {
+         $$ = createPrimitiveType(TYPE_FLOAT);
+      }
+      | INT_LITERAL {
+         $$ = createPrimitiveType(TYPE_INT);
+      }
+      | STRING_LITERAL  {
+         $$ = createPrimitiveType(TYPE_STRING);
+      }
+      | bool_literal {
+         $$ = createPrimitiveType(TYPE_BOOL);
+      }
+      | TOKEN_NULL {
+         $$ = createPrimitiveType(TYPE_NULL);
+      }
       ;
 
    bool_literal: // Bool literal
@@ -260,7 +312,11 @@ typedef struct {
       ;
 
    if_stmt: // If statement
-      TOKEN_IF exp TOKEN_THEN stmt_list if_stmt2 TOKEN_FI
+      TOKEN_IF exp {
+         if ($2->kind != TYPE_BOOL) {
+            yyerror(("Tipo inválido para if: " + getType($2)).c_str());
+         }
+      } TOKEN_THEN stmt_list if_stmt2 TOKEN_FI
       ;
 
    if_stmt2: // If statement two
@@ -269,7 +325,11 @@ typedef struct {
       ;
 
    while_stmt: // While statement
-      TOKEN_WHILE exp TOKEN_DO stmt_list TOKEN_OD
+      TOKEN_WHILE exp {
+         if ($2->kind != TYPE_BOOL) {
+            yyerror(("Tipo inválido para while: " + getType($2)).c_str());
+         }
+      } TOKEN_DO stmt_list TOKEN_OD
       ;
 
    return_stmt: // Return statement
@@ -282,59 +342,71 @@ typedef struct {
       ;
 
    call_stmt: // Call procedure statement
-      NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS
+      NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS {
+         auto sym = symbolTable.lookup(std::string($1));
+
+         if (!isProcedure(sym)) {
+            yyerror(("Procedimento não declarado: " + std::string($1)).c_str());
+         }
+
+         auto procedureTypes = sym->getParams();
+
+         if (procedureTypes.size() != $3.size()) {
+            yyerror(("Quantidade de parâmetros diferentes.").c_str());
+         }
+
+         for (auto i = 0; i < procedureTypes.size(); i++) {
+            if (procedureTypes[i] != getType($3[i])) {
+               yyerror(("Tipo do parâmetro incorreto: pos " + to_string(i)).c_str());
+            }
+         }
+
+         $$ = createTypeByString(sym->getType());
+      }
       ;
 
    call_args: // Call args
-      exp call_args2
-      |
+      exp call_args2 {
+         $$ = std::vector<Type>({$1});
+         $$->insert($$->end(), $2->begin(), $2->end());
+      }
+      | {
+         $$ = std::vector<Type>();
+      }
       ;
 
    call_args2: // Call args two
-      TOKEN_COMMA exp call_args2
-      |
+      TOKEN_COMMA exp call_args2 {
+         $$ = std::vector<Type>({$2});
+         $$->insert($$->end(), $3->begin(), $3->end());
+      }
+      | {
+         $$ = std::vector<Type>();
+      }
       ;
 
    type: // Type
       TOKEN_FLOAT {
-         $$ = new Type;
-         $$->kind = TYPE_FLOAT;
-         $$->name = nullptr;
-         $$->ref = nullptr;
+         $$ = createPrimitiveType(TYPE_FLOAT);
       }
     | TOKEN_INT {
-         $$ = new Type;
-         $$->kind = TYPE_INT;
-         $$->name = nullptr;
-         $$->ref = nullptr;
+         $$ = createPrimitiveType(TYPE_INT);
       }
     | TOKEN_STRING {
-         $$ = new Type;
-         $$->kind = TYPE_STRING;
-         $$->name = nullptr;
-         $$->ref = nullptr;
+         $$ = createPrimitiveType(TYPE_STRING);
       }
     | TOKEN_BOOL {
-         $$ = new Type;
-         $$->kind = TYPE_BOOL;
-         $$->name = nullptr;
-         $$->ref = nullptr;
+         $$ = createPrimitiveType(TYPE_BOOL);
       }
     | NAME {
          auto sym = symbolTable.lookup(std::string($1));
-         if (!sym || (sym->getType() != VariableType::STRUCT && sym->getType() != VariableType::ENUM)) {
+         if (!isSpecialType(sym)) {
             yyerror(("Tipo não declarado ou inválido para type: " + std::string($1)).c_str());
          }
-         $$ = new Type;
-         $$->kind = TYPE_NAME;
-         $$->name = $1;
-         $$->ref = nullptr;
+         $$ = createNonPrimitiveType(std::string($1));
       }
     | TOKEN_REF TOKEN_OPEN_PARENTHESIS type TOKEN_CLOSE_PARENTHESIS {
-         $$ = new Type;
-         $$->kind = TYPE_REF;
-         $$->name = nullptr;
-         $$->ref = $3;  // guarda o type referenciado
+         $$ = createReferenceType($3);
       }
     ;
 
@@ -360,4 +432,79 @@ std::string getType(Type* type) {
    }
 
    return "*" + getType(type->ref);
+}
+
+bool isSpecialType(Symbol* sym) {
+   return sym && (typeid(*sym) == typeid(Struct) || typeid(*sym) == typeid(Enum));
+}
+
+bool isVariable(Symbol* sym) {
+   return sym && (typeid(*sym) == typeid(Variable));
+}
+
+bool isStruct(Symbol* sym) {
+   return sym && (typeid(*sym) == typeid(Struct));
+}
+
+bool isProcedure(Symbol* sym) {
+   return sym && (typeid(*sym) == typeid(Procedure));
+}
+
+Type* createPrimitiveType(TypeKind kind) {
+   auto t = new Type;
+   t->kind = kind;
+   t->name = nullptr;
+   t->ref = nullptr;
+
+   return t;
+}
+Type* createNonPrimitiveType(std::string name) {
+   auto t = new Type;
+   t->kind = TYPE_NAME;
+   t->name = $1;
+   t->ref = nullptr;
+
+   return t;
+}
+Type* createReferenceType(Type* refType) {
+   auto t = new Type;
+   t->kind = TYPE_REF;
+   t->name = nullptr;
+   t->ref = $3;
+
+   return t;
+}
+
+Type* createTypeByString(std::string name) {
+   auto t = new Type;
+   t->name = nullptr;
+   t->ref = nullptr;
+
+   switch(name) {
+      case "int":
+         t->kind = TYPE_INT;
+         break;
+      case "float":
+         t->kind = TYPE_FLOAT;
+         break;
+      case "bool":
+         t->kind = TYPE_BOOL;
+         break;
+      case "string":
+         t->kind = TYPE_STRING;
+         break;
+      case "void":
+         t->kind = TYPE_VOID;
+         break;
+      default:
+         if (name[0] == '*') {
+            t->kind = TYPE_REF;
+            t->ref = createTypeByString(name.substr(1));
+         } else {
+            t->kind = TYPE_NAME;
+            t->name = name;
+         }
+   }
+
+   return t;
 }
