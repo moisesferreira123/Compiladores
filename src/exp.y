@@ -118,8 +118,17 @@ typedef struct {
       ;
    
    var_decl: // Variable declaration
-      TOKEN_VAR NAME TOKEN_COLON type var_decl2 
-      | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp;
+      TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
+         // TODO: Adicionar na tabela de símbolos com o tipo do type.
+         // Se type for TYPE_NAME, verifique se é Struct ou Enum.
+         // Use a função getType para definir o kind do símbolo.
+         // Se var_decl2 tem um valor definido, verificar se são tipos compatíveis.
+      }
+      | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp; {
+         // TODO: Adicionar na tabela de símbolos com o tipo do exp;
+         // Se exp for TYPE_NAME, verifique se é Struct ou Enum.
+         // Use a função getType para definir o kind do símbolo.
+      }
 
 
    var_decl2: // Variable declaration two
@@ -131,7 +140,8 @@ typedef struct {
       TOKEN_PROCEDURE NAME {
          $$ = Procedure(std::string($2));
          symbolTable.enterScope();
-      } TOKEN_OPEN_PARENTHESIS procedure_params  TOKEN_CLOSE_PARENTHESIS return_type {
+      } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type {
+         /// TODO: Salve os parâmetros vindos de procedure_params
          $$->setType(getType($7))
       } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          symbolTable.exitScope();
@@ -140,26 +150,39 @@ typedef struct {
       ;
    
    record_decl: // Record declaration
-      TOKEN_STRUCT NAME TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES
+      TOKEN_STRUCT NAME {
+         // TODO: Use o procedure como exemplo.
+         // Crie o simbolo e abra o escopo, guarde os campos, feche o escopo e salve o simbolo.
+      } TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES {
+
+      }
       ;
 
    procedure_params: // Procedure params
-      paramfield_decl procedure_params2 
+      paramfield_decl procedure_params2 {
+         // TODO: Faça como em call_args
+      }
       | 
       ;
 
    record_fields: // Record fields
-      paramfield_decl record_fields2
+      paramfield_decl record_fields2 {
+         // TODO: Faça como em call_args
+      }
       | 
       ;
 
    procedure_params2: // Procedure params two
-      TOKEN_COMMA paramfield_decl procedure_params2
+      TOKEN_COMMA paramfield_decl procedure_params2 {
+         // TODO: Faça como em call_args2
+      }
       | 
       ;
 
    record_fields2: // Record field two
-      TOKEN_SEMICOLON paramfield_decl record_fields2
+      TOKEN_SEMICOLON paramfield_decl record_fields2 {
+         // TODO: Faça como em call_args2
+      }
       |
       ;
 
@@ -201,17 +224,18 @@ typedef struct {
 
    paramfield_decl: // Param field declaration
       NAME TOKEN_COLON type {
-         $$ = $3;
+         // TODO: Adicionar na tabela de simbolos e definir o tipo.
+         // $$ = $3;
 
-         VariableType type;
-         if ($3->kind == TYPE_NAME) {
-            Symbol* symName = symbolTable.lookup(std::string($3->name));
+         // VariableType type;
+         // if ($3->kind == TYPE_NAME) {
+         //    Symbol* symName = symbolTable.lookup(std::string($3->name));
 
-            if (nonIsSpecialType(symName)) {
+         //    if (nonIsSpecialType(symName)) {
 
-            } /// Verificar se é tipo struct ou enum (typeid)
-         }
-         Symbol sym = Variable(std::string($1),  ,getType($3))
+         //    } /// Verificar se é tipo struct ou enum (typeid)
+         // }
+         // Symbol sym = Variable(std::string($1),  ,getType($3))
       }
       ;
 
