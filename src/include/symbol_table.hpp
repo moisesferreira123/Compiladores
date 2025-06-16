@@ -6,9 +6,6 @@
 #include <unordered_map>
 #include <vector>
 
-// Representa os tipos possíveis de tokens/símbolos
-enum class VariableType { PRIMITIVE, STRUCT, ENUM };
-
 // Estrutura que armazena informações sobre um símbolo
 class Symbol {
    private:
@@ -21,15 +18,14 @@ class Symbol {
 
 class Variable : public Symbol {
    private:
-   VariableType type;
    std::string kind;
 
    public:
-   Variable(std::string name, VariableType type, std::string kind)
-       : Symbol(name), type(type), kind(kind) { }
+   Variable(std::string name, std::string kind)
+       : Symbol(name), kind(kind) { }
 
-   VariableType getType() const { return type; }
-   void setType(VariableType type) { this->type = type; }
+   std::string getKind() const { return kind; }
+   void setKind(std::string kind) { this->kind = kind; }
 };
 
 class Program : public Symbol {

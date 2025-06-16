@@ -98,6 +98,7 @@ typedef struct {
 %type <type> deref_var
 %type <type> exp
 %type <type> call_stmt
+%type <type> var_decl2
 %type <args> call_args
 %type <args> call_args2
 %type <procedure> procedure_decl
@@ -120,21 +121,38 @@ typedef struct {
    
    var_decl: // Variable declaration
       TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
-         // TODO: Adicionar na tabela de símbolos com o tipo do type.
-         // Se type for TYPE_NAME, verifique se é Struct ou Enum.
-         // Use a função getType para definir o kind do símbolo.
-         // Se var_decl2 tem um valor definido, verificar se são tipos compatíveis.
+         if ($5->kind != TYPE_NULL && (!typesAreEquivalent($4, $5))) {
+            yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($4) + " e " + getType($5)).c_str());
+         }
+
+         std::string varName = std::string($2);
+         std::string varKind = getType($4);
+
+         Symbol sym = Variable(varName, varKind);
+         symbolTable.insert(sym);
+         free($2);
       }
-      | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp; {
-         // TODO: Adicionar na tabela de símbolos com o tipo do exp;
-         // Se exp for TYPE_NAME, verifique se é Struct ou Enum.
-         // Use a função getType para definir o kind do símbolo.
-      }
+      | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
+         if ($4->kind == TYPE_NULL) {
+            yyerror(("A expressão não pode assumir o valor null na inicialização").c_str());
+         }
+
+         std::string varName = std::string($2);
+         std::string varKind = getType($4);
+
+         Symbol sym = Variable(varName, varKind);
+         symbolTable.insert(sym);
+         free($2);
+      };
 
 
    var_decl2: // Variable declaration two
-      TOKEN_ATTRIBUTION exp
-      | /*Vazio*/
+      TOKEN_ATTRIBUTION exp {
+         $$ = $1;
+      }
+      | {
+         $$ = createPrimitiveType(TYPE_NULL);
+      }
       ;
 
    procedure_decl: // Procedure declaration
