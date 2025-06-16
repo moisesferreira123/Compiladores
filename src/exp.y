@@ -34,6 +34,7 @@ typedef struct {
 
 bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs);
 bool typesAreEquivalent(Type* lhs, Type* rhs);
+bool typesAreEquivalent(std::string lhs, std::string rhs);
 bool isArithmeticTypes(TypeKind lhs, TypeKind rhs);
 TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs);
 
@@ -490,7 +491,7 @@ typedef struct {
          }
 
          for (auto i = 0; i < procedureTypes.size(); i++) {
-            if (procedureTypes[i] != getType($3[i])) {
+            if (!typesAreEquivalent(procedureTypes[i], getType($3[i]))) {
                yyerror(("Tipo do parâmetro incorreto: pos " + to_string(i)).c_str());
             }
          }
@@ -687,4 +688,11 @@ bool isArithmeticTypes(TypeKind lhs, TypeKind rhs) {
    }
 
    return false;
+}
+
+bool typesAreEquivalent(std::string lhs, std::string rhs) {
+   auto newLhs = createTypeByString(lhs);
+   auto newRhs = createTypeByString(rhs);
+
+   return typesAreEquivalent(newLhs, newRhs);
 }
