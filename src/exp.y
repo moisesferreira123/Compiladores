@@ -32,6 +32,11 @@ typedef struct {
    struct Type* ref;
 } Type;
 
+bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs);
+bool typesAreEquivalent(Type* lhs, Type* rhs);
+bool isArithmeticTypes(TypeKind lhs, TypeKind rhs);
+TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs);
+
 std::string getType(Type* type);
 Type* createPrimitiveType(TypeKind kind);
 Type* createNonPrimitiveType(std::string name);
@@ -86,7 +91,10 @@ typedef struct {
 %type <type> return_type
 %type <type> paramfield_decl
 %type <type> literal
+%type <type> bool_literal
 %type <type> var
+%type <type> ref_var
+%type <type> deref_var
 %type <type> exp
 %type <type> call_stmt
 %type <args> call_args
@@ -218,33 +226,131 @@ typedef struct {
       ;
 
    exp: // Expression
-      exp TOKEN_AND exp
-      | exp TOKEN_OR exp
-      | TOKEN_NOT exp
-      | exp TOKEN_COMP exp
-      | exp TOKEN_EQUAL exp
-      | exp TOKEN_ADD exp
-      | exp TOKEN_SUB exp
-      | exp TOKEN_MULT exp
-      | exp TOKEN_DIV exp
-      | exp TOKEN_POT exp
-      | literal
-      | call_stmt
-      | TOKEN_NEW NAME
-      | var
-      | ref_var
-      | deref_var
-      | TOKEN_OPEN_PARENTHESIS exp TOKEN_CLOSE_PARENTHESIS
-      | TOKEN_SUB exp %prec UMINUS
+      exp TOKEN_AND exp {
+         if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
+            yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
+         } else {
+            $$ = createPrimitiveType(TYPE_BOOL);
+         }
+      }
+      | exp TOKEN_OR exp {
+         if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
+            yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
+         } else {
+            $$ = createPrimitiveType(TYPE_BOOL);
+         }
+      }
+      | TOKEN_NOT exp {
+         if ($2->kind != TYPE_BOOL) {
+            yyerror(("A expressão deve ser do tipo booleano e foi definido no tipo: " + getType($2)).c_str());
+         } else {
+            $$ = createPrimitiveType(TYPE_BOOL);
+         }
+      }
+      | exp TOKEN_COMP exp {
+         if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
+            yyerror(("A comparação deve ser realizada para tipos primitivos equivalentes").c_str());
+         } else {
+            $$ = createPrimitiveType(TYPE_BOOL);
+         }
+      }
+      | exp TOKEN_EQUAL exp {
+         if (!typesAreEquivalente($1, $3) || $1->kind == TYPE_NAME) {
+            yyerror(("A comparação deve ser realizada para tipos equivalentes").c_str());
+         } else {
+            $$ = createPrimitiveType(TYPE_BOOL);
+         }
+      }
+      | exp TOKEN_ADD exp {
+         if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
+            yyerror(("A soma deve ser realizada para tipos primitivos equivalentes").c_str());
+         } else {
+            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+         }
+      }
+      | exp TOKEN_SUB exp {
+         if (!isArithmeticTypes($1->kind, $3->kind)) {
+            yyerror(("A subtração deve ser realizada para tipos aritméticos equivalentes").c_str());
+         } else {
+            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+         }
+      }
+      | exp TOKEN_MULT exp {
+         if (!isArithmeticTypes($1->kind, $3->kind)) {
+            yyerror(("A multiplicação deve ser realizada para tipos aritméticos equivalentes").c_str());
+         } else {
+            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+         }
+      }
+      | exp TOKEN_DIV exp {
+         if (!isArithmeticTypes($1->kind, $3->kind)) {
+            yyerror(("A divisão deve ser realizada para tipos aritméticos equivalentes").c_str());
+         } else {
+            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+         }
+      }
+      | exp TOKEN_POT exp {
+         if (!isArithmeticTypes($1->kind, $3->kind)) {
+            yyerror(("A potenciação deve ser realizada para tipos aritméticos equivalentes").c_str());
+         } else {
+            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+         }
+      }
+      | literal {
+         $$ = $1;
+      }
+      | call_stmt {
+         $$ = $1;
+      }
+      | TOKEN_NEW NAME {
+         auto sym = symbolTable.lookup(std::string($2)); // 1) Buscar na tabela de símbolos. 
+         if (!isSpecialType(sym)) {
+            yyerror(("Simbolo não encontrado ou não é um tipo especial: " + std::string($2)).c_str());
+         }
+         $$ = createReferenceType(createTypeByString(sym->getKind()));
+      }
+      | var {
+         $$ = $1;
+      }
+      | ref_var {
+         $$ = $1;
+      }
+      | deref_var {
+         $$ = $1;
+      }
+      | TOKEN_OPEN_PARENTHESIS exp TOKEN_CLOSE_PARENTHESIS {
+         $$ = $2;
+      }
+      | TOKEN_SUB exp %prec UMINUS {
+         if (!isArithmeticTypes($2->kind, $2->kind)) {
+            yyerror(("O menos unário deve ser realizada para tipos aritméticos").c_str());
+         } else {
+            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($2->kind, $2->kind));
+         }
+      }
       ;
 
    ref_var: // Reference variable
-      TOKEN_REF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS
+      TOKEN_REF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
+         $$ = createReferenceType($3);
+      }
       ;
 
    deref_var: // Dereference variable
-      TOKEN_DEREF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS
-      | TOKEN_DEREF TOKEN_OPEN_PARENTHESIS deref_var TOKEN_CLOSE_PARENTHESIS
+      TOKEN_DEREF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
+         if ($3->kind != TYPE_REF) {
+            yyerror(("A variável precisa ser uma referência: " + getType($3)).c_str());
+         } else {
+            $$ = $3->ref;
+         }
+      }
+      | TOKEN_DEREF TOKEN_OPEN_PARENTHESIS deref_var TOKEN_CLOSE_PARENTHESIS {
+         if ($3->kind != TYPE_REF) {
+            yyerror(("A variável precisa ser uma referência: " + getType($3)).c_str());
+         } else {
+            $$ = $3->ref;
+         }
+      }
       ;
 
    var: // Variable
@@ -294,8 +400,12 @@ typedef struct {
       ;
 
    bool_literal: // Bool literal
-      TOKEN_TRUE
-      | TOKEN_FALSE
+      TOKEN_TRUE {
+         $$ = createPrimitiveType(TYPE_BOOL);
+      }
+      | TOKEN_FALSE {
+         $$ = createPrimitiveType(TYPE_BOOL);
+      }
       ;
 
    stmt: // Statement
@@ -507,4 +617,50 @@ Type* createTypeByString(std::string name) {
    }
 
    return t;
+}
+
+bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs) {
+   if ((lhs == TYPE_INT && rhs == TYPE_FLOAT) || (rhs == TYPE_INT && lhs == TYPE_FLOAT)) {
+      return true;
+   } else if (lhs == TYPE_NAME || rhs == TYPE_NAME) {
+      return false;
+   } else if (lhs == TYPE_REF || rhs == TYPE_REF) {
+      return false;
+   } else if (lhs == rhs) {
+      return true;
+   }
+   
+   return false;
+}
+
+bool typesAreEquivalent(Type* lhs, Type* rhs) {
+   if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
+      return true;
+   } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
+      return typesAreEquivalent(lhs->ref, rhs->ref);
+   } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
+      return lhs->name == rhs->name;
+   } else {
+      return false;
+   }
+}
+
+TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs) {
+   if ((lhs == TYPE_INT && rhs == TYPE_FLOAT) || (rhs == TYPE_INT && lhs == TYPE_FLOAT)) {
+      return TYPE_FLOAT;
+   } else if (lhs == rhs) {
+      return lhs;
+   }
+   
+   return TYPE_NULL;
+}
+
+bool isArithmeticTypes(TypeKind lhs, TypeKind rhs) {
+   if ((lhs == TYPE_INT || lhs == TYPE_FLOAT) && (rhs == TYPE_INT || rhs == TYPE_FLOAT)) {
+      return true;
+   } else if (lhs == TYPE_BOOL && rhs == TYPE_BOOL) {
+      return true;
+   }
+
+   return false;
 }
