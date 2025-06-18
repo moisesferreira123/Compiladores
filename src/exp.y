@@ -3,7 +3,9 @@
 #include <typeinfo>
 #include "symbol_table.hpp"
 #include <vector>
+#include <string>
 #include <unordered_map>
+#include <utility>    // Required for std::pair
 
 extern int numLines;
 extern int numCols;
@@ -17,21 +19,19 @@ bool isStruct(Symbol* sym);
 bool isProcedure(Symbol* sym);
 
 typedef enum {
-   TYPE_NAME,
-   TYPE_VOID,
-   TYPE_INT,
-   TYPE_FLOAT,
-   TYPE_BOOL,
-   TYPE_STRING,
-   TYPE_NULL,
-   TYPE_REF
+   TYPE_NAME, TYPE_VOID, TYPE_INT, TYPE_FLOAT,
+   TYPE_BOOL, TYPE_STRING, TYPE_NULL, TYPE_REF
 } TypeKind;
 
-typedef struct {
+struct Type {
    TypeKind kind;
    char* name;
-   struct Type* ref;
-} Type;
+   Type* ref;
+};
+
+struct Procedure;
+struct Struct;
+struct Enum;
 
 bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs);
 bool typesAreEquivalent(Type* lhs, Type* rhs);
@@ -44,25 +44,20 @@ Type* createPrimitiveType(TypeKind kind);
 Type* createNonPrimitiveType(std::string name);
 Type* createReferenceType(Type* refType);
 Type* createTypeByString(std::string name);
-
-typedef struct {
-   Type type;
-} Expr;
 %}
 
 %union {
-    int ival;
-    float fval;
+    int                              ival;
+    float                            fval;
     char* nval;
     char* sval;
-    Type type;
-    Expr expr;
+    Type* type; // Corrected to pointer as per your previous edit
     Procedure* procedure;
     Struct* stc;
     Enum* enm;
-    std::pair<std::string, Type>* param;
+    std::pair<std::string,Type*>* param;
     std::vector<std::string>* enumfld;
-    std::vector<std::pair<std::string, Type>>* args;
+    std::vector<std::pair<std::string,Type*>>* args;
 }
 
 /// TOKENS
@@ -93,29 +88,17 @@ typedef struct {
 %start program
 
 /// Associação dos não terminais aos tipos
-%type <type> type
-%type <type> return_type
+%type <type>  type return_type literal bool_literal var ref_var deref_var exp call_stmt var_decl2
 %type <param> paramfield_decl
-%type <type> literal
-%type <type> bool_literal
-%type <type> var
-%type <type> ref_var
-%type <type> deref_var
-%type <type> exp
-%type <type> call_stmt
-%type <type> var_decl2
-%type <args> call_args
-%type <args> call_args2
-%type <args> procedure_params
-%type <args> procedure_params2
-%type <args> record_fields
-%type <args> record_fields2
-%type <stc> record_decl
-%type <enm> enum_decl
+%type <args>  call_args call_args2 procedure_params procedure_params2 record_fields record_fields2
+%type <stc>   record_header
+%type <enm>   enum_header
 %type <enumfld> enum_field
-%type <procedure> procedure_decl
+%type <procedure> procedure_header
 
 %%
+
+// Rest of your grammar rules follow here
    program:
       TOKEN_PROGRAM NAME {
          Symbol sym = Program(std::string($2));
@@ -168,38 +151,44 @@ typedef struct {
       ;
 
    procedure_decl: // Procedure declaration
-      TOKEN_PROCEDURE NAME {
-         $$ = new Procedure(std::string($2));
-         symbolTable.enterScope();
-      } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type {
+      procedure_header TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type {
          std::vector<std::string> paramTypes;
          for (const auto& param : $3) {
             paramTypes.push_back(getType(param.second));
          }
-         $$->setParams(paramTypes);
+         $1->setParams(paramTypes);
 
-         $$->setType(getType($7))
+         $1->setType(getType($5))
       } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          symbolTable.exitScope();
-         symbolTable.insert($$);
+         symbolTable.insert($1);
       }
       ;
+
+   procedure_header:
+    TOKEN_PROCEDURE NAME {
+        $$ = new Procedure(std::string($2));
+        symbolTable.enterScope();
+    };
    
    record_decl: // Record declaration
-      TOKEN_STRUCT NAME {
-         $$ = new Struct(std::string($2));
-         symbolTable.enterScope();
-         free($2);
-      } TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES {
+      record_header TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES {
          std::unordered_map<std::string, std::string> fields;
          for (const auto& field : $3) {
             fields[field.first] = getType(field.second);
          }
-         $$->setFields(fields);
+         $1->setFields(fields);
          symbolTable.exitScope();
-         symbolTable.insert($$);
+         symbolTable.insert($1);
       }
       ;
+   
+   record_header:
+      TOKEN_STRUCT NAME {
+         $$ = new Struct(std::string($2));
+         symbolTable.enterScope();
+         free($2);
+      }
 
    procedure_params: // Procedure params
       paramfield_decl procedure_params2 {
@@ -269,21 +258,25 @@ typedef struct {
       ;
 
    enum_decl: // Enum declaration
+      enum_header TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES {  
+         // TODO: Salvar os fields na tabela de simbolos?
+         std::vector<std::string> enumFields = {$4};
+         for (const auto& field : $5) {
+            enumFields.push_back(field);
+         }
+
+         $1->setFields(enumFields);
+         symbolTable.exitScope();
+         symbolTable.insert($1);
+      }
+      ;
+   
+   enum_header:
       TOKEN_ENUM NAME {
          $$ = new Enum(std::string($2));
          symbolTable.enterScope();
          free($2);
-      } TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES {
-         std::vector<std::string> enumFields = {$3};
-         for (const auto& field : $4) {
-            enumFields.push_back(field);
-         }
-
-         $$->setFields(enumFields);
-         symbolTable.exitScope();
-         symbolTable.insert($$);
       }
-      ;
 
    enum_field: // Enum field
       TOKEN_COMMA NAME enum_field {
