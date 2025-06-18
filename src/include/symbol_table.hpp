@@ -14,6 +14,7 @@ class Symbol {
    public:
    Symbol(std::string name) : name(name) { }
    std::string getName() const { return name; }
+   virtual ~Symbol() {} 
 };
 
 class Variable : public Symbol {

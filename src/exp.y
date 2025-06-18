@@ -3,6 +3,7 @@
 #include <typeinfo>
 #include "symbol_table.hpp"
 #include <vector>
+#include <unordered_map>
 
 extern int numLines;
 extern int numCols;
@@ -56,8 +57,12 @@ typedef struct {
     char* sval;
     Type type;
     Expr expr;
-    Procedure procedure;
-    std::vector<Type> args;
+    Procedure* procedure;
+    Struct* stc;
+    Enum* enm;
+    std::pair<std::string, Type>* param;
+    std::vector<std::string>* enumfld;
+    std::vector<std::pair<std::string, Type>>* args;
 }
 
 /// TOKENS
@@ -90,7 +95,7 @@ typedef struct {
 /// Associação dos não terminais aos tipos
 %type <type> type
 %type <type> return_type
-%type <type> paramfield_decl
+%type <param> paramfield_decl
 %type <type> literal
 %type <type> bool_literal
 %type <type> var
@@ -101,6 +106,13 @@ typedef struct {
 %type <type> var_decl2
 %type <args> call_args
 %type <args> call_args2
+%type <args> procedure_params
+%type <args> procedure_params2
+%type <args> record_fields
+%type <args> record_fields2
+%type <stc> record_decl
+%type <enm> enum_decl
+%type <enumfld> enum_field
 %type <procedure> procedure_decl
 
 %%
@@ -148,7 +160,7 @@ typedef struct {
 
    var_decl2: // Variable declaration two
       TOKEN_ATTRIBUTION exp {
-         $$ = $1;
+         $$ = $2;
       }
       | {
          $$ = createPrimitiveType(TYPE_NULL);
@@ -157,10 +169,15 @@ typedef struct {
 
    procedure_decl: // Procedure declaration
       TOKEN_PROCEDURE NAME {
-         $$ = Procedure(std::string($2));
+         $$ = new Procedure(std::string($2));
          symbolTable.enterScope();
       } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type {
-         /// TODO: Salve os parâmetros vindos de procedure_params
+         std::vector<std::string> paramTypes;
+         for (const auto& param : $3) {
+            paramTypes.push_back(getType(param.second));
+         }
+         $$->setParams(paramTypes);
+
          $$->setType(getType($7))
       } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          symbolTable.exitScope();
@@ -170,39 +187,58 @@ typedef struct {
    
    record_decl: // Record declaration
       TOKEN_STRUCT NAME {
-         // TODO: Use o procedure como exemplo.
-         // Crie o simbolo e abra o escopo, guarde os campos, feche o escopo e salve o simbolo.
+         $$ = new Struct(std::string($2));
+         symbolTable.enterScope();
+         free($2);
       } TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES {
-
+         std::unordered_map<std::string, std::string> fields;
+         for (const auto& field : $3) {
+            fields[field.first] = getType(field.second);
+         }
+         $$->setFields(fields);
+         symbolTable.exitScope();
+         symbolTable.insert($$);
       }
       ;
 
    procedure_params: // Procedure params
       paramfield_decl procedure_params2 {
-         // TODO: Faça como em call_args
+         $$ = std::vector<std::pair<std::string, Type>>({$1});
+         $$->insert($$->end(), $2->begin(), $2->end());
       }
-      | 
+      | {
+         $$ = std::vector<std::pair<std::string, Type>>();
+      }
       ;
 
    record_fields: // Record fields
       paramfield_decl record_fields2 {
-         // TODO: Faça como em call_args
+         $$ = std::vector<std::pair<std::string, Type>>({$1});
+         $$->insert($$->end(), $2->begin(), $2->end());
       }
-      | 
+      | {
+         $$ = std::vector<std::pair<std::string, Type>>();
+      }
       ;
 
    procedure_params2: // Procedure params two
       TOKEN_COMMA paramfield_decl procedure_params2 {
-         // TODO: Faça como em call_args2
+         $$ = std::vector<std::pair<std::string, Type>>({$2});
+         $$->insert($$->end(), $3->begin(), $3->end());
       }
-      | 
+      | {
+         $$ = std::vector<std::pair<std::string, Type>>();
+      }
       ;
 
    record_fields2: // Record field two
       TOKEN_SEMICOLON paramfield_decl record_fields2 {
-         // TODO: Faça como em call_args2
+         $$ = std::vector<std::pair<std::string, Type>>({$2});
+         $$->insert($$->end(), $3->begin(), $3->end());         
       }
-      |
+      | {
+         $$ = std::vector<std::pair<std::string, Type>>();
+      }
       ;
 
    return_type: // Return type
@@ -233,28 +269,42 @@ typedef struct {
       ;
 
    enum_decl: // Enum declaration
-      TOKEN_ENUM NAME TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES
+      TOKEN_ENUM NAME {
+         $$ = new Enum(std::string($2));
+         symbolTable.enterScope();
+         free($2);
+      } TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES {
+         std::vector<std::string> enumFields = {$3};
+         for (const auto& field : $4) {
+            enumFields.push_back(field);
+         }
+
+         $$->setFields(enumFields);
+         symbolTable.exitScope();
+         symbolTable.insert($$);
+      }
       ;
 
    enum_field: // Enum field
-      TOKEN_COMMA NAME enum_field 
-      | 
+      TOKEN_COMMA NAME enum_field {
+         $$ = std::vector<std::string>({std::string($2)});
+         $$->insert($$->end(), $3.begin(), $3.end());
+         free($2);
+      } 
+      | {
+         $$ = std::vector<std::string>();
+      }
       ;
 
    paramfield_decl: // Param field declaration
       NAME TOKEN_COLON type {
-         // TODO: Adicionar na tabela de simbolos e definir o tipo.
-         // $$ = $3;
+         $$ = {std::string($1), $3};
+         std::string varName = std::string($1);
+         std::string varKind = getType($3);
 
-         // VariableType type;
-         // if ($3->kind == TYPE_NAME) {
-         //    Symbol* symName = symbolTable.lookup(std::string($3->name));
-
-         //    if (nonIsSpecialType(symName)) {
-
-         //    } /// Verificar se é tipo struct ou enum (typeid)
-         // }
-         // Symbol sym = Variable(std::string($1),  ,getType($3))
+         Symbol sym = Variable(varName, varKind);
+         symbolTable.insert(sym);
+         free($1);
       }
       ;
 
@@ -350,7 +400,7 @@ typedef struct {
          if (!isSpecialType(sym)) {
             yyerror(("Simbolo não encontrado ou não é um tipo especial: " + std::string($2)).c_str());
          }
-         $$ = createReferenceType(createTypeByString(sym->getKind()));
+         $$ = createReferenceType(createTypeByString(sym->getName()));
       }
       | var {
          $$ = $1;
@@ -402,7 +452,8 @@ typedef struct {
          if (!isVariable(sym)) {
             yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
          }
-         $$ = createTypeByString(sym->getKind());
+         Variable* var = dynamic_cast<Variable*>(sym);
+         $$ = createTypeByString(var->getKind());
       }
       | exp TOKEN_DOT NAME {
          if ($1->kind == TYPE_NAME) {
@@ -412,7 +463,9 @@ typedef struct {
                yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
             }
 
-            auto fields = symName->getFields();
+            Struct* structType = dynamic_cast<Struct*>(symName);
+
+            auto fields = structType->getFields();
             if (fields.find(std::string($3)) == fields.end()) {
                yyerror(("Campo não declarado para: " + getType($1)).c_str());
             }
@@ -502,25 +555,26 @@ typedef struct {
             yyerror(("Procedimento não declarado: " + std::string($1)).c_str());
          }
 
-         auto procedureTypes = sym->getParams();
+         Procedure* proc = dynamic_cast<Procedure*>(sym);
+         auto procedureTypes = proc->getParams();
 
          if (procedureTypes.size() != $3.size()) {
             yyerror(("Quantidade de parâmetros diferentes.").c_str());
          }
 
          for (auto i = 0; i < procedureTypes.size(); i++) {
-            if (!typesAreEquivalent(procedureTypes[i], getType($3[i]))) {
+            if (!typesAreEquivalent(procedureTypes[i], getType($3[i].second))) {
                yyerror(("Tipo do parâmetro incorreto: pos " + to_string(i)).c_str());
             }
          }
 
-         $$ = createTypeByString(sym->getType());
+         $$ = createTypeByString(proc->getType());
       }
       ;
 
    call_args: // Call args
       exp call_args2 {
-         $$ = std::vector<Type>({$1});
+         $$ = std::vector<Type>({{"",$1}});
          $$->insert($$->end(), $2->begin(), $2->end());
       }
       | {
@@ -530,7 +584,7 @@ typedef struct {
 
    call_args2: // Call args two
       TOKEN_COMMA exp call_args2 {
-         $$ = std::vector<Type>({$2});
+         $$ = std::vector<Type>({{"",$2}});
          $$->insert($$->end(), $3->begin(), $3->end());
       }
       | {
@@ -588,19 +642,19 @@ std::string getType(Type* type) {
 }
 
 bool isSpecialType(Symbol* sym) {
-   return sym && (typeid(*sym) == typeid(Struct) || typeid(*sym) == typeid(Enum));
+   return sym && (Struct* s = dynamic_cast<Struct*>(sym) || Enum* e = dynamic_cast<Enum*>(sym));
 }
 
 bool isVariable(Symbol* sym) {
-   return sym && (typeid(*sym) == typeid(Variable));
+   return sym && (Variable* s = dynamic_cast<Variable*>(sym));
 }
 
 bool isStruct(Symbol* sym) {
-   return sym && (typeid(*sym) == typeid(Struct));
+   return sym && (Struct* s = dynamic_cast<Struct*>(sym));
 }
 
 bool isProcedure(Symbol* sym) {
-   return sym && (typeid(*sym) == typeid(Procedure));
+   return sym && (Procedure* s = dynamic_cast<Procedure*>(sym));
 }
 
 Type* createPrimitiveType(TypeKind kind) {
@@ -614,7 +668,7 @@ Type* createPrimitiveType(TypeKind kind) {
 Type* createNonPrimitiveType(std::string name) {
    auto t = new Type;
    t->kind = TYPE_NAME;
-   t->name = $1;
+   t->name = name;
    t->ref = nullptr;
 
    return t;
@@ -623,7 +677,7 @@ Type* createReferenceType(Type* refType) {
    auto t = new Type;
    t->kind = TYPE_REF;
    t->name = nullptr;
-   t->ref = $3;
+   t->ref = refType;
 
    return t;
 }
