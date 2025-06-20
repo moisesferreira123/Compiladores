@@ -1,72 +1,13 @@
 %{
-// Este é o bloco principal de prólogo C/C++.
-// TODOS os includes de bibliotecas padrão C++ e seus próprios cabeçalhos devem vir aqui.
-#include <iostream>
-#include <typeinfo>
-#include <string>           // Para std::string
-#include <vector>           // Para std::vector
-#include <unordered_map>
-#include <utility>          // Para std::pair
-#include <memory>           // Para std::unique_ptr e std::make_unique
-#include <cstring>          // Para strdup e strcmp
-#include "symbol_table.hpp" // AQUI! Inclua symbol_table.hpp para que SymbolTable seja conhecida
+#include "symbol_table.hpp"
 
 extern int numLines;
 extern int numCols;
-extern SymbolTable symbolTable; // Instância da tabela de símbolos - SymbolTable já é conhecida agora
+extern SymbolTable symbolTable;
 %}
 
-// O bloco %code requires é copiado para o arquivo de cabeçalho gerado (exp.tab.h).
-// Ele contém definições de tipos e protótipos de funções que o Flex e outras partes
-// do Bison precisam para serem type-safe no .h.
-// Não coloque #includes aqui dentro, a menos que sejam para definição de macros
-// muito específicas que Bison precise resolver no momento da geração do .h.
 %code requires {
-    // Definição da struct Type (e seu enum associado)
-    // Movida para cá para que a %union e os protótipos de funções no .h gerado a vejam.
-    typedef enum {
-       TYPE_NAME, TYPE_VOID, TYPE_INT, TYPE_FLOAT,
-       TYPE_BOOL, TYPE_STRING, TYPE_NULL, TYPE_REF
-    } TypeKind;
-
-    struct Type {
-       TypeKind kind;
-       char* name;
-       Type* ref;
-    };
-
-    // Forward declarations para as classes Symbol da tabela de símbolos.
-    // Elas precisam ser declaradas como classes aqui para que o Bison saiba
-    // que elas existem ao referenciá-las em ponteiros na %union.
-    // A definição COMPLETA virá do include em 'exp.tab.c' e 'lex.yy.c'.
-    class Symbol;
-    class Variable;
-    class Program;
-    class Procedure;
-    class Struct;
-    class Enum;
-
-    // Protótipos das funções auxiliares.
-    // Estas também precisam estar aqui para o .h gerado e para Flex.
-    int yylex(void);
-    void yyerror(char const* s);
-
-    bool isSpecialType(Symbol* sym);
-    bool isVariable(Symbol* sym);
-    bool isStruct(Symbol* sym);
-    bool isProcedure(Symbol* sym);
-
-    bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs);
-    bool typesAreEquivalent(Type* lhs, Type* rhs);
-    bool typesAreEquivalent(std::string lhs, std::string rhs);
-    bool isArithmeticTypes(TypeKind lhs, TypeKind rhs);
-    TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs);
-
-    std::string getType(Type* type);
-    Type* createPrimitiveType(TypeKind kind);
-    Type* createNonPrimitiveType(std::string name);
-    Type* createReferenceType(Type* refType);
-    Type* createTypeByString(std::string name);
+   #include "type_utils.hpp"
 }
 
 %union {
@@ -489,37 +430,37 @@ extern SymbolTable symbolTable; // Instância da tabela de símbolos - SymbolTab
       }
       ;
 
-   var:
-      NAME {
-         auto sym = symbolTable.lookup(std::string($1));
-         if (!isVariable(sym)) {
-            yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
-         }
-         Variable* var = dynamic_cast<Variable*>(sym);
-         $$ = createTypeByString(var->getKind());
-         free($1);
-      }
-      | exp TOKEN_DOT NAME {
-         if ($1->kind == TYPE_NAME) {
-            Symbol* symName = symbolTable.lookup(std::string($1->name));
-
-            if (!isStruct(symName)) {
-               yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
+      var:
+         NAME {
+            auto sym = symbolTable.lookup(std::string($1));
+            if (!isVariable(sym)) {
+               yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
             }
-
-            Struct* structType = dynamic_cast<Struct*>(symName);
-
-            auto fields = structType->getFields();
-            if (fields.find(std::string($3)) == fields.end()) {
-               yyerror(("Campo não declarado para: " + getType($1)).c_str());
-            }
-
-            $$ = createTypeByString(fields[std::string($3)]);
-         } else {
-            yyerror(("Tipo inválido para var: " + getType($1)).c_str());
+            Variable* var = dynamic_cast<Variable*>(sym);
+            $$ = createTypeByString(var->getKind());
+            free($1);
          }
-         free($3);
-      }
+         | exp TOKEN_DOT NAME {
+            if ($1->kind == TYPE_NAME) {
+               Symbol* symName = symbolTable.lookup(std::string($1->name));
+
+               if (!isStruct(symName)) {
+                  yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
+               }
+
+               Struct* structType = dynamic_cast<Struct*>(symName);
+
+               auto fields = structType->getFields();
+               if (fields.find(std::string($3)) == fields.end()) {
+                  yyerror(("Campo não declarado para: " + getType($1)).c_str());
+               }
+
+               $$ = createTypeByString(fields[std::string($3)]);
+            } else {
+               yyerror(("Tipo inválido para var: " + getType($1)).c_str());
+            }
+            free($3);
+         }
       ;
 
    literal:
@@ -846,9 +787,9 @@ bool isArithmeticTypes(TypeKind lhs, TypeKind rhs) {
       return true;
    } else if (lhs == TYPE_BOOL && rhs == TYPE_BOOL) {
       return true;
+   } else {
+      return false;
    }
-
-   return false;
 }
 
 bool typesAreEquivalent(std::string lhs, std::string rhs) {

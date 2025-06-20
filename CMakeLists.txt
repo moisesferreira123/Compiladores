@@ -14,7 +14,7 @@ set(SYMBOL_TABLE ${HEADERS_DIR}/symbol_table.cpp)
 set(MAIN ${SRC_DIR}/main.cpp)
 set(LEX ${SRC_DIR}/exp.l)
 set(YACC ${SRC_DIR}/exp.y)
-set(HEADERS ${HEADERS_DIR}/symbol_table.hpp)
+set(HEADERS ${HEADERS_DIR}/symbol_table.hpp ${HEADERS_DIR}/type_utils.hpp)
 
 # Arquivos gerados
 set(LEX_C ${INTERMEDIATE_DIR}/lex.yy.c)
