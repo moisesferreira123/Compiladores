@@ -42,7 +42,7 @@ extern SymbolTable symbolTable;
 %left TOKEN_OR
 %left TOKEN_AND
 %right TOKEN_NOT
-%left TOKEN_COMP TOKEN_EQUAL
+%nonassoc TOKEN_COMP TOKEN_EQUAL
 %left TOKEN_ADD TOKEN_SUB
 %left TOKEN_MULT TOKEN_DIV
 %right TOKEN_POT
@@ -500,21 +500,13 @@ extern SymbolTable symbolTable;
 
    assign_stmt:
       var TOKEN_ATTRIBUTION exp {
-         if ($1->kind == TYPE_NULL) {
-            yyerror("A variável não pode assumir o valor null na atribuição");
-         }
-
          if (!typesAreEquivalent($1, $3)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
          }
       }
       | deref_var TOKEN_ATTRIBUTION exp {
-         if ($1->kind != TYPE_REF) {
-            yyerror(("A variável precisa ser uma referência: " + getType($1)).c_str());
-         }
-
-         if (!typesAreEquivalent($1->ref, $3)) {
-            yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1->ref) + " e " + getType($3)).c_str());
+         if (!typesAreEquivalent($1, $3)) {
+            yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
          }
       }
       ;
