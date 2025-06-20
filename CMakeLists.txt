@@ -54,8 +54,8 @@ add_library(main_obj OBJECT ${MAIN})
 target_include_directories(main_obj PUBLIC ${HEADERS_DIR})
 
 # Compilar arquivos gerados
-add_library(lex_obj OBJECT ${LEX_C})
 add_library(yacc_obj OBJECT ${YACC_C})
+add_library(lex_obj OBJECT ${LEX_C})
 
 # Corrigir includes
 target_include_directories(lex_obj PRIVATE ${HEADERS_DIR} ${INTERMEDIATE_DIR})

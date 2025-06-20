@@ -87,7 +87,9 @@ extern SymbolTable symbolTable;
 
    var_decl:
       TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
-         if ($5->kind != TYPE_NULL && (!typesAreEquivalent($4, $5))) {
+         if ($4->kind == TYPE_ERROR || $5->kind == TYPE_ERROR) {
+            // Ignora a regra pois já houve erro anteriormente.
+         } else if ($5->kind != TYPE_NULL && (!typesAreEquivalent($4, $5))) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($4) + " e " + getType($5)).c_str());
          }
 
@@ -525,12 +527,16 @@ extern SymbolTable symbolTable;
 
    assign_stmt:
       var TOKEN_ATTRIBUTION exp {
-         if (!typesAreEquivalent($1, $3)) {
+         if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
+            // Ignora a regra pois já houve erro anteriormente.
+         } else if (!typesAreEquivalent($1, $3)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
          }
       }
       | deref_var TOKEN_ATTRIBUTION exp {
-         if (!typesAreEquivalent($1, $3)) {
+         if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
+            // Ignora a regra pois já houve erro anteriormente.
+         } else if (!typesAreEquivalent($1, $3)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
          }
       }
