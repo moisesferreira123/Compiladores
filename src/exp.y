@@ -352,7 +352,6 @@ extern SymbolTable symbolTable;
          }
       }
       | exp TOKEN_SUB exp {
-         std::cout << "Entrei na subtração" << std::endl;
          if (!isArithmeticTypes($1->kind, $3->kind)) {
             yyerror("A subtração deve ser realizada para tipos aritméticos equivalentes");
             $$ = createPrimitiveType(TYPE_ERROR);

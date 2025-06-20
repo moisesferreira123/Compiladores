@@ -295,7 +295,7 @@ of {
     return FLOAT_LITERAL; 
 }
 
-\"[^\n\t\r]*\" { 
+\"[^\\"\n\r]*\" { 
     numCols += yyleng; 
     // copia o conteúdo da string removendo as aspas
     int len = yyleng - 2; // desconta as aspas
