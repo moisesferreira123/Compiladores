@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory> // Para std::unique_ptr
 
 // Estrutura que armazena informações sobre um símbolo
 class Symbol {
@@ -14,7 +15,7 @@ class Symbol {
    public:
    Symbol(std::string name) : name(name) { }
    std::string getName() const { return name; }
-   virtual ~Symbol() {} 
+   virtual ~Symbol() {}
 };
 
 class Variable : public Symbol {
@@ -72,9 +73,13 @@ class Enum : public Symbol {
    std::vector<std::string> values;
 
    public:
-   Enum(std::string name, std::vector<std::string> values)
+   // Modificado o construtor para receber values por cópia ou referência constante
+   Enum(std::string name, std::vector<std::string> values = {})
        : Symbol(name), values(values) { }
 
+   void setFields(const std::vector<std::string>& fields) { // Renomeado de setValues para setFields, mantendo sua intenção do .y
+        this->values = fields;
+    }
    std::vector<std::string> getValues() const { return values; }
    void setValues(std::vector<std::string> values) { this->values = values; }
 
@@ -84,18 +89,26 @@ class Enum : public Symbol {
 // Nó da Árvore de escopos
 class Node {
    private:
-   std::unordered_map<std::string, Symbol> table;
+   // Alterado para armazenar unique_ptr para evitar slicing
+   std::unordered_map<std::string, std::unique_ptr<Symbol>> table;
    Node* father;
 
    public:
    Node(Node* father) : father(father) { }
-   void insert(Symbol const& symbol) {
-      table.insert({ symbol.getName(), symbol });
+
+   // Destrutor para garantir que os ponteiros únicos sejam liberados
+   ~Node() {}
+
+   // Insere um smart pointer (unique_ptr)
+   void insert(std::unique_ptr<Symbol> symbol) {
+      table.insert({ symbol->getName(), std::move(symbol) });
    }
+
+   // Lookup retorna um ponteiro bruto, pois o ownership ainda está no mapa
    Symbol* lookup(std::string const& name) {
       auto it = table.find(name);
       if (it != table.end()) {
-         return &(it->second);
+         return it->second.get(); // Retorna o ponteiro bruto do unique_ptr
       }
       if (father != nullptr) {
          return father->lookup(name);
@@ -112,14 +125,24 @@ class SymbolTable {
 
    public:
    SymbolTable() : current(new Node(nullptr)) { }
+   
+   // Destrutor para liberar a memória dos nós da árvore
+   ~SymbolTable() {
+        while (current != nullptr) {
+            Node* temp = current->getFather();
+            delete current;
+            current = temp;
+        }
+   }
 
-   void insert(Symbol const& symbol) { current->insert(symbol); }
+   // Insert agora aceita um smart pointer (unique_ptr)
+   void insert(std::unique_ptr<Symbol> symbol) { current->insert(std::move(symbol)); }
 
    void enterScope() { current = new Node(current); }
 
    void exitScope() {
       Node* tmp = current->getFather();
-      delete current;
+      delete current; // Node delete will free its unique_ptrs
       current = tmp;
    }
 

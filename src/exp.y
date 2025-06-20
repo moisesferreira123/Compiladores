@@ -1,63 +1,86 @@
 %{
+// Este é o bloco principal de prólogo C/C++.
+// TODOS os includes de bibliotecas padrão C++ e seus próprios cabeçalhos devem vir aqui.
 #include <iostream>
 #include <typeinfo>
-#include "symbol_table.hpp"
-#include <vector>
-#include <string>
+#include <string>           // Para std::string
+#include <vector>           // Para std::vector
 #include <unordered_map>
-#include <utility>    // Required for std::pair
+#include <utility>          // Para std::pair
+#include <memory>           // Para std::unique_ptr e std::make_unique
+#include <cstring>          // Para strdup e strcmp
+#include "symbol_table.hpp" // AQUI! Inclua symbol_table.hpp para que SymbolTable seja conhecida
 
 extern int numLines;
 extern int numCols;
-extern SymbolTable symbolTable;
-
-int yylex(void);
-void yyerror(char const* s);
-bool isSpecialType(Symbol* sym);
-bool isVariable(Symbol* sym);
-bool isStruct(Symbol* sym);
-bool isProcedure(Symbol* sym);
-
-typedef enum {
-   TYPE_NAME, TYPE_VOID, TYPE_INT, TYPE_FLOAT,
-   TYPE_BOOL, TYPE_STRING, TYPE_NULL, TYPE_REF
-} TypeKind;
-
-struct Type {
-   TypeKind kind;
-   char* name;
-   Type* ref;
-};
-
-struct Procedure;
-struct Struct;
-struct Enum;
-
-bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs);
-bool typesAreEquivalent(Type* lhs, Type* rhs);
-bool typesAreEquivalent(std::string lhs, std::string rhs);
-bool isArithmeticTypes(TypeKind lhs, TypeKind rhs);
-TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs);
-
-std::string getType(Type* type);
-Type* createPrimitiveType(TypeKind kind);
-Type* createNonPrimitiveType(std::string name);
-Type* createReferenceType(Type* refType);
-Type* createTypeByString(std::string name);
+extern SymbolTable symbolTable; // Instância da tabela de símbolos - SymbolTable já é conhecida agora
 %}
+
+// O bloco %code requires é copiado para o arquivo de cabeçalho gerado (exp.tab.h).
+// Ele contém definições de tipos e protótipos de funções que o Flex e outras partes
+// do Bison precisam para serem type-safe no .h.
+// Não coloque #includes aqui dentro, a menos que sejam para definição de macros
+// muito específicas que Bison precise resolver no momento da geração do .h.
+%code requires {
+    // Definição da struct Type (e seu enum associado)
+    // Movida para cá para que a %union e os protótipos de funções no .h gerado a vejam.
+    typedef enum {
+       TYPE_NAME, TYPE_VOID, TYPE_INT, TYPE_FLOAT,
+       TYPE_BOOL, TYPE_STRING, TYPE_NULL, TYPE_REF
+    } TypeKind;
+
+    struct Type {
+       TypeKind kind;
+       char* name;
+       Type* ref;
+    };
+
+    // Forward declarations para as classes Symbol da tabela de símbolos.
+    // Elas precisam ser declaradas como classes aqui para que o Bison saiba
+    // que elas existem ao referenciá-las em ponteiros na %union.
+    // A definição COMPLETA virá do include em 'exp.tab.c' e 'lex.yy.c'.
+    class Symbol;
+    class Variable;
+    class Program;
+    class Procedure;
+    class Struct;
+    class Enum;
+
+    // Protótipos das funções auxiliares.
+    // Estas também precisam estar aqui para o .h gerado e para Flex.
+    int yylex(void);
+    void yyerror(char const* s);
+
+    bool isSpecialType(Symbol* sym);
+    bool isVariable(Symbol* sym);
+    bool isStruct(Symbol* sym);
+    bool isProcedure(Symbol* sym);
+
+    bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs);
+    bool typesAreEquivalent(Type* lhs, Type* rhs);
+    bool typesAreEquivalent(std::string lhs, std::string rhs);
+    bool isArithmeticTypes(TypeKind lhs, TypeKind rhs);
+    TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs);
+
+    std::string getType(Type* type);
+    Type* createPrimitiveType(TypeKind kind);
+    Type* createNonPrimitiveType(std::string name);
+    Type* createReferenceType(Type* refType);
+    Type* createTypeByString(std::string name);
+}
 
 %union {
     int                              ival;
     float                            fval;
     char* nval;
     char* sval;
-    Type* type; // Corrected to pointer as per your previous edit
-    Procedure* procedure;
-    Struct* stc;
-    Enum* enm;
-    std::pair<std::string,Type*>* param;
-    std::vector<std::string>* enumfld;
-    std::vector<std::pair<std::string,Type*>>* args;
+    Type* type; // Type* é conhecido pelo %code requires
+    Procedure* procedure; // Procedure* é conhecido pelo %code requires
+    Struct* stc;          // Struct* é conhecido pelo %code requires
+    Enum* enm;            // Enum* é conhecido pelo %code requires
+    std::pair<std::string,Type*>* param; // std::pair é conhecido pelo include global
+    std::vector<std::string>* enumfld;   // std::vector é conhecido pelo include global
+    std::vector<std::pair<std::string,Type*>>* args; // std::vector e std::pair conhecidos
 }
 
 /// TOKENS
@@ -78,7 +101,7 @@ Type* createTypeByString(std::string name);
 %left TOKEN_OR
 %left TOKEN_AND
 %right TOKEN_NOT
-%left TOKEN_COMP TOKEN_EQUAL  
+%left TOKEN_COMP TOKEN_EQUAL
 %left TOKEN_ADD TOKEN_SUB
 %left TOKEN_MULT TOKEN_DIV
 %right TOKEN_POT
@@ -98,23 +121,21 @@ Type* createTypeByString(std::string name);
 
 %%
 
-// Rest of your grammar rules follow here
    program:
       TOKEN_PROGRAM NAME {
-         Symbol sym = Program(std::string($2));
-         symbolTable.insert(sym);
+         symbolTable.insert(std::make_unique<Program>(std::string($2)));
          free($2);
-    } TOKEN_BEGIN decl_block TOKEN_END 
+    } TOKEN_BEGIN decl_block TOKEN_END
     ;
 
-   decl: // Declaration
+   decl:
       var_decl
       | procedure_decl
       | record_decl
       | enum_decl
       ;
-   
-   var_decl: // Variable declaration
+
+   var_decl:
       TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
          if ($5->kind != TYPE_NULL && (!typesAreEquivalent($4, $5))) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($4) + " e " + getType($5)).c_str());
@@ -123,25 +144,23 @@ Type* createTypeByString(std::string name);
          std::string varName = std::string($2);
          std::string varKind = getType($4);
 
-         Symbol sym = Variable(varName, varKind);
-         symbolTable.insert(sym);
+         symbolTable.insert(std::make_unique<Variable>(varName, varKind));
          free($2);
       }
       | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
          if ($4->kind == TYPE_NULL) {
-            yyerror(("A expressão não pode assumir o valor null na inicialização").c_str());
+            yyerror("A expressão não pode assumir o valor null na inicialização");
          }
 
          std::string varName = std::string($2);
          std::string varKind = getType($4);
 
-         Symbol sym = Variable(varName, varKind);
-         symbolTable.insert(sym);
+         symbolTable.insert(std::make_unique<Variable>(varName, varKind));
          free($2);
       };
 
 
-   var_decl2: // Variable declaration two
+   var_decl2:
       TOKEN_ATTRIBUTION exp {
          $$ = $2;
       }
@@ -150,18 +169,20 @@ Type* createTypeByString(std::string name);
       }
       ;
 
-   procedure_decl: // Procedure declaration
+   procedure_decl:
       procedure_header TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type {
          std::vector<std::string> paramTypes;
-         for (const auto& param : $3) {
-            paramTypes.push_back(getType(param.second));
+         if ($3) {
+            for (const auto& param : *$3) {
+               paramTypes.push_back(getType(param.second));
+            }
          }
          $1->setParams(paramTypes);
 
-         $1->setType(getType($5))
+         $1->setType(getType($5));
       } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          symbolTable.exitScope();
-         symbolTable.insert($1);
+         symbolTable.insert(std::unique_ptr<Procedure>($1));
       }
       ;
 
@@ -169,20 +190,23 @@ Type* createTypeByString(std::string name);
     TOKEN_PROCEDURE NAME {
         $$ = new Procedure(std::string($2));
         symbolTable.enterScope();
+        free($2);
     };
-   
-   record_decl: // Record declaration
+
+   record_decl:
       record_header TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES {
          std::unordered_map<std::string, std::string> fields;
-         for (const auto& field : $3) {
-            fields[field.first] = getType(field.second);
+         if ($3) {
+            for (const auto& field : *$3) {
+               fields[field.first] = getType(field.second);
+            }
          }
          $1->setFields(fields);
          symbolTable.exitScope();
-         symbolTable.insert($1);
+         symbolTable.insert(std::unique_ptr<Struct>($1));
       }
       ;
-   
+
    record_header:
       TOKEN_STRUCT NAME {
          $$ = new Struct(std::string($2));
@@ -190,49 +214,69 @@ Type* createTypeByString(std::string name);
          free($2);
       }
 
-   procedure_params: // Procedure params
+   procedure_params:
       paramfield_decl procedure_params2 {
-         $$ = std::vector<std::pair<std::string, Type>>({$1});
-         $$->insert($$->end(), $2->begin(), $2->end());
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+         $$->push_back(*$1);
+         if ($2) {
+            $$->insert($$->end(), $2->begin(), $2->end());
+            delete $2;
+         }
+         delete $1;
       }
       | {
-         $$ = std::vector<std::pair<std::string, Type>>();
+         $$ = new std::vector<std::pair<std::string, Type*>>();
       }
       ;
 
-   record_fields: // Record fields
+   record_fields:
       paramfield_decl record_fields2 {
-         $$ = std::vector<std::pair<std::string, Type>>({$1});
-         $$->insert($$->end(), $2->begin(), $2->end());
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+         $$->push_back(*$1);
+         if ($2) {
+            $$->insert($$->end(), $2->begin(), $2->end());
+            delete $2;
+         }
+         delete $1;
       }
       | {
-         $$ = std::vector<std::pair<std::string, Type>>();
+         $$ = new std::vector<std::pair<std::string, Type*>>();
       }
       ;
 
-   procedure_params2: // Procedure params two
+   procedure_params2:
       TOKEN_COMMA paramfield_decl procedure_params2 {
-         $$ = std::vector<std::pair<std::string, Type>>({$2});
-         $$->insert($$->end(), $3->begin(), $3->end());
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+         $$->push_back(*$2);
+         if ($3) {
+            $$->insert($$->end(), $3->begin(), $3->end());
+            delete $3;
+         }
+         delete $2;
       }
       | {
-         $$ = std::vector<std::pair<std::string, Type>>();
+         $$ = new std::vector<std::pair<std::string, Type*>>();
       }
       ;
 
-   record_fields2: // Record field two
+   record_fields2:
       TOKEN_SEMICOLON paramfield_decl record_fields2 {
-         $$ = std::vector<std::pair<std::string, Type>>({$2});
-         $$->insert($$->end(), $3->begin(), $3->end());         
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+         $$->push_back(*$2);
+         if ($3) {
+            $$->insert($$->end(), $3->begin(), $3->end());
+            delete $3;
+         }
+         delete $2;
       }
       | {
-         $$ = std::vector<std::pair<std::string, Type>>();
+         $$ = new std::vector<std::pair<std::string, Type*>>();
       }
       ;
 
-   return_type: // Return type
+   return_type:
       TOKEN_COLON type {
-         $$ = $2
+         $$ = $2;
       }
       | {
          $$ = new Type;
@@ -242,35 +286,37 @@ Type* createTypeByString(std::string name);
       }
       ;
 
-   scope_declarations: // Scope declarations
+   scope_declarations:
       decl_block TOKEN_IN
-      | 
+      |
       ;
 
-   decl_block: // Declaration block
+   decl_block:
       decl decl_block2
       |
       ;
 
-   decl_block2: // Declaration block two
+   decl_block2:
       TOKEN_SEMICOLON decl decl_block2
-      | 
+      |
       ;
 
-   enum_decl: // Enum declaration
-      enum_header TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES {  
-         // TODO: Salvar os fields na tabela de simbolos?
-         std::vector<std::string> enumFields = {$4};
-         for (const auto& field : $5) {
-            enumFields.push_back(field);
+   enum_decl:
+      enum_header TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES {
+         std::vector<std::string> enumFields;
+         enumFields.push_back(std::string($4));
+         if ($5) {
+            enumFields.insert(enumFields.end(), $5->begin(), $5->end());
+            delete $5;
          }
 
          $1->setFields(enumFields);
          symbolTable.exitScope();
-         symbolTable.insert($1);
+         symbolTable.insert(std::unique_ptr<Enum>($1));
+         free($4);
       }
       ;
-   
+
    enum_header:
       TOKEN_ENUM NAME {
          $$ = new Enum(std::string($2));
@@ -278,40 +324,43 @@ Type* createTypeByString(std::string name);
          free($2);
       }
 
-   enum_field: // Enum field
+   enum_field:
       TOKEN_COMMA NAME enum_field {
-         $$ = std::vector<std::string>({std::string($2)});
-         $$->insert($$->end(), $3.begin(), $3.end());
+         $$ = new std::vector<std::string>();
+         $$->push_back(std::string($2));
+         if ($3) {
+            $$->insert($$->end(), $3->begin(), $3->end());
+            delete $3;
+         }
          free($2);
-      } 
+      }
       | {
-         $$ = std::vector<std::string>();
+         $$ = new std::vector<std::string>();
       }
       ;
 
-   paramfield_decl: // Param field declaration
+   paramfield_decl:
       NAME TOKEN_COLON type {
-         $$ = {std::string($1), $3};
+         $$ = new std::pair<std::string,Type*>(std::string($1), $3);
          std::string varName = std::string($1);
          std::string varKind = getType($3);
 
-         Symbol sym = Variable(varName, varKind);
-         symbolTable.insert(sym);
+         symbolTable.insert(std::make_unique<Variable>(varName, varKind));
          free($1);
       }
       ;
 
-   stmt_list: // Statement list
+   stmt_list:
       stmt stmt_list2
       |
       ;
 
-   stmt_list2: // Statement list two
+   stmt_list2:
       TOKEN_SEMICOLON stmt stmt_list2
       |
       ;
 
-   exp: // Expression
+   exp:
       exp TOKEN_AND exp {
          if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
             yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
@@ -335,49 +384,49 @@ Type* createTypeByString(std::string name);
       }
       | exp TOKEN_COMP exp {
          if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
-            yyerror(("A comparação deve ser realizada para tipos primitivos equivalentes").c_str());
+            yyerror("A comparação deve ser realizada para tipos primitivos equivalentes");
          } else {
             $$ = createPrimitiveType(TYPE_BOOL);
          }
       }
       | exp TOKEN_EQUAL exp {
-         if (!typesAreEquivalente($1, $3) || $1->kind == TYPE_NAME) {
-            yyerror(("A comparação deve ser realizada para tipos equivalentes").c_str());
+         if (!typesAreEquivalent($1, $3) || $1->kind == TYPE_NAME) {
+            yyerror("A comparação deve ser realizada para tipos equivalentes");
          } else {
             $$ = createPrimitiveType(TYPE_BOOL);
          }
       }
       | exp TOKEN_ADD exp {
          if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
-            yyerror(("A soma deve ser realizada para tipos primitivos equivalentes").c_str());
+            yyerror("A soma deve ser realizada para tipos primitivos equivalentes");
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
       }
       | exp TOKEN_SUB exp {
          if (!isArithmeticTypes($1->kind, $3->kind)) {
-            yyerror(("A subtração deve ser realizada para tipos aritméticos equivalentes").c_str());
+            yyerror("A subtração deve ser realizada para tipos aritméticos equivalentes");
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
       }
       | exp TOKEN_MULT exp {
          if (!isArithmeticTypes($1->kind, $3->kind)) {
-            yyerror(("A multiplicação deve ser realizada para tipos aritméticos equivalentes").c_str());
+            yyerror("A multiplicação deve ser realizada para tipos aritméticos equivalentes");
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
       }
       | exp TOKEN_DIV exp {
          if (!isArithmeticTypes($1->kind, $3->kind)) {
-            yyerror(("A divisão deve ser realizada para tipos aritméticos equivalentes").c_str());
+            yyerror("A divisão deve ser realizada para tipos aritméticos equivalentes");
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
       }
       | exp TOKEN_POT exp {
          if (!isArithmeticTypes($1->kind, $3->kind)) {
-            yyerror(("A potenciação deve ser realizada para tipos aritméticos equivalentes").c_str());
+            yyerror("A potenciação deve ser realizada para tipos aritméticos equivalentes");
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
@@ -389,11 +438,12 @@ Type* createTypeByString(std::string name);
          $$ = $1;
       }
       | TOKEN_NEW NAME {
-         auto sym = symbolTable.lookup(std::string($2)); // 1) Buscar na tabela de símbolos. 
+         auto sym = symbolTable.lookup(std::string($2));
          if (!isSpecialType(sym)) {
             yyerror(("Simbolo não encontrado ou não é um tipo especial: " + std::string($2)).c_str());
          }
          $$ = createReferenceType(createTypeByString(sym->getName()));
+         free($2);
       }
       | var {
          $$ = $1;
@@ -409,20 +459,20 @@ Type* createTypeByString(std::string name);
       }
       | TOKEN_SUB exp %prec UMINUS {
          if (!isArithmeticTypes($2->kind, $2->kind)) {
-            yyerror(("O menos unário deve ser realizada para tipos aritméticos").c_str());
+            yyerror("O menos unário deve ser realizada para tipos aritméticos");
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($2->kind, $2->kind));
          }
       }
       ;
 
-   ref_var: // Reference variable
+   ref_var:
       TOKEN_REF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
          $$ = createReferenceType($3);
       }
       ;
 
-   deref_var: // Dereference variable
+   deref_var:
       TOKEN_DEREF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
          if ($3->kind != TYPE_REF) {
             yyerror(("A variável precisa ser uma referência: " + getType($3)).c_str());
@@ -439,7 +489,7 @@ Type* createTypeByString(std::string name);
       }
       ;
 
-   var: // Variable
+   var:
       NAME {
          auto sym = symbolTable.lookup(std::string($1));
          if (!isVariable(sym)) {
@@ -447,6 +497,7 @@ Type* createTypeByString(std::string name);
          }
          Variable* var = dynamic_cast<Variable*>(sym);
          $$ = createTypeByString(var->getKind());
+         free($1);
       }
       | exp TOKEN_DOT NAME {
          if ($1->kind == TYPE_NAME) {
@@ -462,15 +513,16 @@ Type* createTypeByString(std::string name);
             if (fields.find(std::string($3)) == fields.end()) {
                yyerror(("Campo não declarado para: " + getType($1)).c_str());
             }
-            
+
             $$ = createTypeByString(fields[std::string($3)]);
          } else {
-            yyerror(("Tipo não inválido para var: " + getType($1)).c_str());
+            yyerror(("Tipo inválido para var: " + getType($1)).c_str());
          }
+         free($3);
       }
       ;
 
-   literal: // Literal
+   literal:
       FLOAT_LITERAL {
          $$ = createPrimitiveType(TYPE_FLOAT);
       }
@@ -488,7 +540,7 @@ Type* createTypeByString(std::string name);
       }
       ;
 
-   bool_literal: // Bool literal
+   bool_literal:
       TOKEN_TRUE {
          $$ = createPrimitiveType(TYPE_BOOL);
       }
@@ -497,7 +549,7 @@ Type* createTypeByString(std::string name);
       }
       ;
 
-   stmt: // Statement
+   stmt:
       assign_stmt
       | if_stmt
       | while_stmt
@@ -505,12 +557,28 @@ Type* createTypeByString(std::string name);
       | call_stmt
       ;
 
-   assign_stmt: // Assign statement
-      var TOKEN_ATTRIBUTION exp
-      | deref_var TOKEN_ATTRIBUTION exp
+   assign_stmt:
+      var TOKEN_ATTRIBUTION exp {
+         if ($1->kind == TYPE_NULL) {
+            yyerror("A variável não pode assumir o valor null na atribuição");
+         }
+
+         if (!typesAreEquivalent($1, $3)) {
+            yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
+         }
+      }
+      | deref_var TOKEN_ATTRIBUTION exp {
+         if ($1->kind != TYPE_REF) {
+            yyerror(("A variável precisa ser uma referência: " + getType($1)).c_str());
+         }
+
+         if (!typesAreEquivalent($1->ref, $3)) {
+            yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1->ref) + " e " + getType($3)).c_str());
+         }
+      }
       ;
 
-   if_stmt: // If statement
+   if_stmt:
       TOKEN_IF exp {
          if ($2->kind != TYPE_BOOL) {
             yyerror(("Tipo inválido para if: " + getType($2)).c_str());
@@ -518,12 +586,12 @@ Type* createTypeByString(std::string name);
       } TOKEN_THEN stmt_list if_stmt2 TOKEN_FI
       ;
 
-   if_stmt2: // If statement two
+   if_stmt2:
       TOKEN_ELSE stmt_list
       |
       ;
 
-   while_stmt: // While statement
+   while_stmt:
       TOKEN_WHILE exp {
          if ($2->kind != TYPE_BOOL) {
             yyerror(("Tipo inválido para while: " + getType($2)).c_str());
@@ -531,16 +599,16 @@ Type* createTypeByString(std::string name);
       } TOKEN_DO stmt_list TOKEN_OD
       ;
 
-   return_stmt: // Return statement
+   return_stmt:
       TOKEN_RETURN return_stmt2
       ;
 
-   return_stmt2: // Return statement two
+   return_stmt2:
       exp
       |
       ;
 
-   call_stmt: // Call procedure statement
+   call_stmt:
       NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS {
          auto sym = symbolTable.lookup(std::string($1));
 
@@ -551,41 +619,61 @@ Type* createTypeByString(std::string name);
          Procedure* proc = dynamic_cast<Procedure*>(sym);
          auto procedureTypes = proc->getParams();
 
-         if (procedureTypes.size() != $3.size()) {
-            yyerror(("Quantidade de parâmetros diferentes.").c_str());
+         std::vector<Type*> actualArgs;
+         if ($3) {
+             for (const auto& arg_pair : *$3) {
+                 actualArgs.push_back(arg_pair.second);
+             }
+             delete $3;
          }
 
-         for (auto i = 0; i < procedureTypes.size(); i++) {
-            if (!typesAreEquivalent(procedureTypes[i], getType($3[i].second))) {
-               yyerror(("Tipo do parâmetro incorreto: pos " + to_string(i)).c_str());
+         if (procedureTypes.size() != actualArgs.size()) {
+            yyerror("Quantidade de parâmetros diferentes.");
+         }
+
+         for (size_t i = 0; i < procedureTypes.size(); i++) {
+            Type* expectedType = createTypeByString(procedureTypes[i]);
+            if (!typesAreEquivalent(expectedType, actualArgs[i])) {
+               yyerror(("Tipo do parâmetro incorreto: pos " + std::to_string(i)).c_str());
             }
+            if (expectedType->name) free(expectedType->name);
+            delete expectedType;
          }
 
          $$ = createTypeByString(proc->getType());
+         free($1);
       }
       ;
 
-   call_args: // Call args
+   call_args:
       exp call_args2 {
-         $$ = std::vector<Type>({{"",$1}});
-         $$->insert($$->end(), $2->begin(), $2->end());
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+         $$->push_back({"",$1});
+         if ($2) {
+            $$->insert($$->end(), $2->begin(), $2->end());
+            delete $2;
+         }
       }
       | {
-         $$ = std::vector<Type>();
+         $$ = new std::vector<std::pair<std::string, Type*>>();
       }
       ;
 
-   call_args2: // Call args two
+   call_args2:
       TOKEN_COMMA exp call_args2 {
-         $$ = std::vector<Type>({{"",$2}});
-         $$->insert($$->end(), $3->begin(), $3->end());
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+         $$->push_back({"",$2});
+         if ($3) {
+            $$->insert($$->end(), $3->begin(), $3->end());
+            delete $3;
+         }
       }
       | {
-         $$ = std::vector<Type>();
+         $$ = new std::vector<std::pair<std::string, Type*>>();
       }
       ;
 
-   type: // Type
+   type:
       TOKEN_FLOAT {
          $$ = createPrimitiveType(TYPE_FLOAT);
       }
@@ -604,6 +692,7 @@ Type* createTypeByString(std::string name);
             yyerror(("Tipo não declarado ou inválido para type: " + std::string($1)).c_str());
          }
          $$ = createNonPrimitiveType(std::string($1));
+         free($1);
       }
     | TOKEN_REF TOKEN_OPEN_PARENTHESIS type TOKEN_CLOSE_PARENTHESIS {
          $$ = createReferenceType($3);
@@ -629,25 +718,27 @@ std::string getType(Type* type) {
       return "void";
    } else if (type->kind == TYPE_NAME) {
       return type->name;
+   } else if (type->kind == TYPE_NULL) {
+      return "null";
    }
 
    return "*" + getType(type->ref);
 }
 
 bool isSpecialType(Symbol* sym) {
-   return sym && (Struct* s = dynamic_cast<Struct*>(sym) || Enum* e = dynamic_cast<Enum*>(sym));
+   return sym && (dynamic_cast<Struct*>(sym) != nullptr || dynamic_cast<Enum*>(sym) != nullptr);
 }
 
 bool isVariable(Symbol* sym) {
-   return sym && (Variable* s = dynamic_cast<Variable*>(sym));
+   return sym && dynamic_cast<Variable*>(sym) != nullptr;
 }
 
 bool isStruct(Symbol* sym) {
-   return sym && (Struct* s = dynamic_cast<Struct*>(sym));
+   return sym && dynamic_cast<Struct*>(sym) != nullptr;
 }
 
 bool isProcedure(Symbol* sym) {
-   return sym && (Procedure* s = dynamic_cast<Procedure*>(sym));
+   return sym && dynamic_cast<Procedure*>(sym) != nullptr;
 }
 
 Type* createPrimitiveType(TypeKind kind) {
@@ -661,7 +752,7 @@ Type* createPrimitiveType(TypeKind kind) {
 Type* createNonPrimitiveType(std::string name) {
    auto t = new Type;
    t->kind = TYPE_NAME;
-   t->name = name;
+   t->name = strdup(name.c_str());
    t->ref = nullptr;
 
    return t;
@@ -680,30 +771,27 @@ Type* createTypeByString(std::string name) {
    t->name = nullptr;
    t->ref = nullptr;
 
-   switch(name) {
-      case "int":
-         t->kind = TYPE_INT;
-         break;
-      case "float":
-         t->kind = TYPE_FLOAT;
-         break;
-      case "bool":
-         t->kind = TYPE_BOOL;
-         break;
-      case "string":
-         t->kind = TYPE_STRING;
-         break;
-      case "void":
-         t->kind = TYPE_VOID;
-         break;
-      default:
-         if (name[0] == '*') {
-            t->kind = TYPE_REF;
-            t->ref = createTypeByString(name.substr(1));
-         } else {
-            t->kind = TYPE_NAME;
-            t->name = name;
-         }
+   if (name == "int") {
+      t->kind = TYPE_INT;
+   } else if (name == "float") {
+      t->kind = TYPE_FLOAT;
+   } else if (name == "bool") {
+      t->kind = TYPE_BOOL;
+   } else if (name == "string") {
+      t->kind = TYPE_STRING;
+   } else if (name == "void") {
+      t->kind = TYPE_VOID;
+   } else if (name == "null") {
+      t->kind = TYPE_NULL;
+   }
+   else {
+      if (!name.empty() && name[0] == '*') {
+         t->kind = TYPE_REF;
+         t->ref = createTypeByString(name.substr(1));
+      } else {
+         t->kind = TYPE_NAME;
+         t->name = strdup(name.c_str());
+      }
    }
 
    return t;
@@ -719,17 +807,25 @@ bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs) {
    } else if (lhs == rhs) {
       return true;
    }
-   
+
    return false;
 }
 
 bool typesAreEquivalent(Type* lhs, Type* rhs) {
+   if (!lhs || !rhs) {
+       return false;
+   }
+
+   if (lhs->kind == TYPE_NULL || rhs->kind == TYPE_NULL) {
+      return true;
+   }
+
    if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
       return true;
    } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
       return typesAreEquivalent(lhs->ref, rhs->ref);
    } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
-      return lhs->name == rhs->name;
+      return strcmp(lhs->name, rhs->name) == 0;
    } else {
       return false;
    }
@@ -741,7 +837,7 @@ TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs) {
    } else if (lhs == rhs) {
       return lhs;
    }
-   
+
    return TYPE_NULL;
 }
 
@@ -756,8 +852,19 @@ bool isArithmeticTypes(TypeKind lhs, TypeKind rhs) {
 }
 
 bool typesAreEquivalent(std::string lhs, std::string rhs) {
-   auto newLhs = createTypeByString(lhs);
-   auto newRhs = createTypeByString(rhs);
+   Type* newLhs = createTypeByString(lhs);
+   Type* newRhs = createTypeByString(rhs);
 
-   return typesAreEquivalent(newLhs, newRhs);
+   bool result = typesAreEquivalent(newLhs, newRhs);
+
+   if (newLhs) {
+       if (newLhs->name) free(newLhs->name);
+       delete newLhs;
+   }
+   if (newRhs) {
+       if (newRhs->name) free(newRhs->name);
+       delete newRhs;
+   }
+
+   return result;
 }

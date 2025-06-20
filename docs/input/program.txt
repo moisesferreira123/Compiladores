@@ -18,7 +18,7 @@ begin
         a,
         b,
         c
-      } of int
+      }
     in
       x := 42; y := 84;
       if x = y then

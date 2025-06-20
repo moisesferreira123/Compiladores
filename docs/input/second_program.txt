@@ -1,0 +1,17 @@
+program calc
+begin
+   var x := 10 + 10;
+   struct Person {
+      name: string;
+      age: int
+   };
+   procedure name()
+   begin
+      var person: Person
+   in
+      person.age := "2025" - "2003";
+      if person.age > 18 then
+         person.name := "Pedro"
+      fi
+   end
+end
