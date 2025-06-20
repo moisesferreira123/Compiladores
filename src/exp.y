@@ -1,3 +1,11 @@
+// TODO: Em regras que usam tipos de outras regras, verifique se o tipo é TYPE_ERROR. Se for, apenas ignore a regra pois o erro já foi acusado.
+// Exemplo: assign_stmt: var TOKEN_ATTRIBUTION exp {
+//    if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
+//       continue; // Ignora a regra pois já houve erro anteriormente.
+//    } else if (!typesAreEquivalent($1, $3)) {
+//       yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
+//    }
+// }
 %{
 #include "symbol_table.hpp"
 
