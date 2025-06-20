@@ -1,16 +1,23 @@
+#include "symbol_table.hpp"
+#include <cstring>
 #include <iostream>
-#include <typeinfo>
+#include <memory>
 #include <string>
-#include <vector>
+#include <typeinfo>
 #include <unordered_map>
 #include <utility>
-#include <memory>
-#include <cstring>
-#include "symbol_table.hpp"
+#include <vector>
 
 typedef enum {
-   TYPE_NAME, TYPE_VOID, TYPE_INT, TYPE_FLOAT,
-   TYPE_BOOL, TYPE_STRING, TYPE_NULL, TYPE_REF
+   TYPE_NAME,
+   TYPE_VOID,
+   TYPE_INT,
+   TYPE_FLOAT,
+   TYPE_BOOL,
+   TYPE_STRING,
+   TYPE_NULL,
+   TYPE_REF,
+   TYPE_ERROR
 } TypeKind;
 
 struct Type {

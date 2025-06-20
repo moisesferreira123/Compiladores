@@ -48,6 +48,7 @@ extern SymbolTable symbolTable;
 %right TOKEN_POT
 %left TOKEN_DOT
 %right UMINUS
+%right TOKEN_ATTRIBUTION
 
 %start program
 
@@ -305,6 +306,7 @@ extern SymbolTable symbolTable;
       exp TOKEN_AND exp {
          if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
             yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(TYPE_BOOL);
          }
@@ -312,6 +314,7 @@ extern SymbolTable symbolTable;
       | exp TOKEN_OR exp {
          if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
             yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(TYPE_BOOL);
          }
@@ -319,6 +322,7 @@ extern SymbolTable symbolTable;
       | TOKEN_NOT exp {
          if ($2->kind != TYPE_BOOL) {
             yyerror(("A expressão deve ser do tipo booleano e foi definido no tipo: " + getType($2)).c_str());
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(TYPE_BOOL);
          }
@@ -326,6 +330,7 @@ extern SymbolTable symbolTable;
       | exp TOKEN_COMP exp {
          if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
             yyerror("A comparação deve ser realizada para tipos primitivos equivalentes");
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(TYPE_BOOL);
          }
@@ -333,6 +338,7 @@ extern SymbolTable symbolTable;
       | exp TOKEN_EQUAL exp {
          if (!typesAreEquivalent($1, $3) || $1->kind == TYPE_NAME) {
             yyerror("A comparação deve ser realizada para tipos equivalentes");
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(TYPE_BOOL);
          }
@@ -340,13 +346,16 @@ extern SymbolTable symbolTable;
       | exp TOKEN_ADD exp {
          if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
             yyerror("A soma deve ser realizada para tipos primitivos equivalentes");
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
       }
       | exp TOKEN_SUB exp {
+         std::cout << "Entrei na subtração" << std::endl;
          if (!isArithmeticTypes($1->kind, $3->kind)) {
             yyerror("A subtração deve ser realizada para tipos aritméticos equivalentes");
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
@@ -354,6 +363,7 @@ extern SymbolTable symbolTable;
       | exp TOKEN_MULT exp {
          if (!isArithmeticTypes($1->kind, $3->kind)) {
             yyerror("A multiplicação deve ser realizada para tipos aritméticos equivalentes");
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
@@ -361,6 +371,7 @@ extern SymbolTable symbolTable;
       | exp TOKEN_DIV exp {
          if (!isArithmeticTypes($1->kind, $3->kind)) {
             yyerror("A divisão deve ser realizada para tipos aritméticos equivalentes");
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
@@ -368,6 +379,7 @@ extern SymbolTable symbolTable;
       | exp TOKEN_POT exp {
          if (!isArithmeticTypes($1->kind, $3->kind)) {
             yyerror("A potenciação deve ser realizada para tipos aritméticos equivalentes");
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
          }
@@ -382,6 +394,7 @@ extern SymbolTable symbolTable;
          auto sym = symbolTable.lookup(std::string($2));
          if (!isSpecialType(sym)) {
             yyerror(("Simbolo não encontrado ou não é um tipo especial: " + std::string($2)).c_str());
+            $$ = createPrimitiveType(TYPE_ERROR);
          }
          $$ = createReferenceType(createTypeByString(sym->getName()));
          free($2);
@@ -401,6 +414,7 @@ extern SymbolTable symbolTable;
       | TOKEN_SUB exp %prec UMINUS {
          if (!isArithmeticTypes($2->kind, $2->kind)) {
             yyerror("O menos unário deve ser realizada para tipos aritméticos");
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(getPrimitiveTypeOfOperation($2->kind, $2->kind));
          }
@@ -417,6 +431,7 @@ extern SymbolTable symbolTable;
       TOKEN_DEREF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
          if ($3->kind != TYPE_REF) {
             yyerror(("A variável precisa ser uma referência: " + getType($3)).c_str());
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = $3->ref;
          }
@@ -424,6 +439,7 @@ extern SymbolTable symbolTable;
       | TOKEN_DEREF TOKEN_OPEN_PARENTHESIS deref_var TOKEN_CLOSE_PARENTHESIS {
          if ($3->kind != TYPE_REF) {
             yyerror(("A variável precisa ser uma referência: " + getType($3)).c_str());
+            $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = $3->ref;
          }
@@ -435,6 +451,7 @@ extern SymbolTable symbolTable;
             auto sym = symbolTable.lookup(std::string($1));
             if (!isVariable(sym)) {
                yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
+               $$ = createPrimitiveType(TYPE_ERROR);
             }
             Variable* var = dynamic_cast<Variable*>(sym);
             $$ = createTypeByString(var->getKind());
@@ -446,6 +463,7 @@ extern SymbolTable symbolTable;
 
                if (!isStruct(symName)) {
                   yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
+                  $$ = createPrimitiveType(TYPE_ERROR);
                }
 
                Struct* structType = dynamic_cast<Struct*>(symName);
@@ -562,12 +580,14 @@ extern SymbolTable symbolTable;
 
          if (procedureTypes.size() != actualArgs.size()) {
             yyerror("Quantidade de parâmetros diferentes.");
+            $$ = createPrimitiveType(TYPE_ERROR);
          }
 
          for (size_t i = 0; i < procedureTypes.size(); i++) {
             Type* expectedType = createTypeByString(procedureTypes[i]);
             if (!typesAreEquivalent(expectedType, actualArgs[i])) {
                yyerror(("Tipo do parâmetro incorreto: pos " + std::to_string(i)).c_str());
+               $$ = createPrimitiveType(TYPE_ERROR);
             }
             if (expectedType->name) free(expectedType->name);
             delete expectedType;
@@ -623,6 +643,7 @@ extern SymbolTable symbolTable;
          auto sym = symbolTable.lookup(std::string($1));
          if (!isSpecialType(sym)) {
             yyerror(("Tipo não declarado ou inválido para type: " + std::string($1)).c_str());
+            $$ = createPrimitiveType(TYPE_ERROR);
          }
          $$ = createNonPrimitiveType(std::string($1));
          free($1);
@@ -653,6 +674,8 @@ std::string getType(Type* type) {
       return type->name;
    } else if (type->kind == TYPE_NULL) {
       return "null";
+   } else if (type->kind == TYPE_ERROR) {
+      return "error";
    }
 
    return "*" + getType(type->ref);
@@ -716,8 +739,9 @@ Type* createTypeByString(std::string name) {
       t->kind = TYPE_VOID;
    } else if (name == "null") {
       t->kind = TYPE_NULL;
-   }
-   else {
+   } else if (name == "error") {
+      t->kind = TYPE_ERROR;
+   } else {
       if (!name.empty() && name[0] == '*') {
          t->kind = TYPE_REF;
          t->ref = createTypeByString(name.substr(1));
