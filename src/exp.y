@@ -91,24 +91,26 @@ extern SymbolTable symbolTable;
             // Ignora a regra pois já houve erro anteriormente.
          } else if ($5->kind != TYPE_NULL && (!typesAreEquivalent($4, $5))) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($4) + " e " + getType($5)).c_str());
+         } else {
+            std::string varName = std::string($2);
+            std::string varKind = getType($4);
+
+            symbolTable.insert(std::make_unique<Variable>(varName, varKind));
+            free($2);
          }
-
-         std::string varName = std::string($2);
-         std::string varKind = getType($4);
-
-         symbolTable.insert(std::make_unique<Variable>(varName, varKind));
-         free($2);
       }
       | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
-         if ($4->kind == TYPE_NULL) {
+         if ($4->kind == TYPE_ERROR) {
+            // Ignora a regra pois já houve erro anteriormente.
+         } else if ($4->kind == TYPE_NULL) {
             yyerror("A expressão não pode assumir o valor null na inicialização");
+         } else {
+            std::string varName = std::string($2);
+            std::string varKind = getType($4);
+
+            symbolTable.insert(std::make_unique<Variable>(varName, varKind));
+            free($2);
          }
-
-         std::string varName = std::string($2);
-         std::string varKind = getType($4);
-
-         symbolTable.insert(std::make_unique<Variable>(varName, varKind));
-         free($2);
       };
 
 
@@ -130,7 +132,6 @@ extern SymbolTable symbolTable;
             }
          }
          $1->setParams(paramTypes);
-
          $1->setType(getType($5));
       } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          symbolTable.exitScope();
@@ -314,7 +315,9 @@ extern SymbolTable symbolTable;
 
    exp:
       exp TOKEN_AND exp {
-         if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
+         if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
+            $$ = createPrimitiveType(TYPE_ERROR);
+         } else if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
             yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
             $$ = createPrimitiveType(TYPE_ERROR);
          } else {
@@ -322,7 +325,9 @@ extern SymbolTable symbolTable;
          }
       }
       | exp TOKEN_OR exp {
-         if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
+         if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
+            $$ = createPrimitiveType(TYPE_ERROR);
+         } else if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
             yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
             $$ = createPrimitiveType(TYPE_ERROR);
          } else {
@@ -330,7 +335,9 @@ extern SymbolTable symbolTable;
          }
       }
       | TOKEN_NOT exp {
-         if ($2->kind != TYPE_BOOL) {
+         if ($2->kind == TYPE_ERROR) {
+            $$ = createPrimitiveType(TYPE_ERROR);
+         } else if ($2->kind != TYPE_BOOL) {
             yyerror(("A expressão deve ser do tipo booleano e foi definido no tipo: " + getType($2)).c_str());
             $$ = createPrimitiveType(TYPE_ERROR);
          } else {
@@ -404,9 +411,10 @@ extern SymbolTable symbolTable;
          if (!isSpecialType(sym)) {
             yyerror(("Simbolo não encontrado ou não é um tipo especial: " + std::string($2)).c_str());
             $$ = createPrimitiveType(TYPE_ERROR);
+         } else {
+            $$ = createReferenceType(createTypeByString(sym->getName()));
+            free($2);
          }
-         $$ = createReferenceType(createTypeByString(sym->getName()));
-         free($2);
       }
       | var {
          $$ = $1;
@@ -461,10 +469,11 @@ extern SymbolTable symbolTable;
             if (!isVariable(sym)) {
                yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
                $$ = createPrimitiveType(TYPE_ERROR);
+            } else {
+               Variable* var = dynamic_cast<Variable*>(sym);
+               $$ = createTypeByString(var->getKind());
+               free($1);
             }
-            Variable* var = dynamic_cast<Variable*>(sym);
-            $$ = createTypeByString(var->getKind());
-            free($1);
          }
          | exp TOKEN_DOT NAME {
             if ($1->kind == TYPE_NAME) {
@@ -483,8 +492,11 @@ extern SymbolTable symbolTable;
                }
 
                $$ = createTypeByString(fields[std::string($3)]);
+            } else if ($1->kind == TYPE_ERROR) {
+               // Ignora
             } else {
                yyerror(("Tipo inválido para var: " + getType($1)).c_str());
+               $$ = createPrimitiveType(TYPE_ERROR);
             }
             free($3);
          }
@@ -544,7 +556,9 @@ extern SymbolTable symbolTable;
 
    if_stmt:
       TOKEN_IF exp {
-         if ($2->kind != TYPE_BOOL) {
+         if ($2->kind == TYPE_ERROR) {
+            // Ignora
+         } else if ($2->kind != TYPE_BOOL) {
             yyerror(("Tipo inválido para if: " + getType($2)).c_str());
          }
       } TOKEN_THEN stmt_list if_stmt2 TOKEN_FI
@@ -557,7 +571,9 @@ extern SymbolTable symbolTable;
 
    while_stmt:
       TOKEN_WHILE exp {
-         if ($2->kind != TYPE_BOOL) {
+         if ($2->kind == TYPE_ERROR) {
+            // Ignora
+         } else if ($2->kind != TYPE_BOOL) {
             yyerror(("Tipo inválido para while: " + getType($2)).c_str());
          }
       } TOKEN_DO stmt_list TOKEN_OD
@@ -578,35 +594,39 @@ extern SymbolTable symbolTable;
 
          if (!isProcedure(sym)) {
             yyerror(("Procedimento não declarado: " + std::string($1)).c_str());
-         }
-
-         Procedure* proc = dynamic_cast<Procedure*>(sym);
-         auto procedureTypes = proc->getParams();
-
-         std::vector<Type*> actualArgs;
-         if ($3) {
-             for (const auto& arg_pair : *$3) {
-                 actualArgs.push_back(arg_pair.second);
-             }
-             delete $3;
-         }
-
-         if (procedureTypes.size() != actualArgs.size()) {
-            yyerror("Quantidade de parâmetros diferentes.");
             $$ = createPrimitiveType(TYPE_ERROR);
-         }
+         } else {
+            Procedure* proc = dynamic_cast<Procedure*>(sym);
+            auto procedureTypes = proc->getParams();
 
-         for (size_t i = 0; i < procedureTypes.size(); i++) {
-            Type* expectedType = createTypeByString(procedureTypes[i]);
-            if (!typesAreEquivalent(expectedType, actualArgs[i])) {
-               yyerror(("Tipo do parâmetro incorreto: pos " + std::to_string(i)).c_str());
-               $$ = createPrimitiveType(TYPE_ERROR);
+            std::vector<Type*> actualArgs;
+            if ($3) {
+               for (const auto& arg_pair : *$3) {
+                  actualArgs.push_back(arg_pair.second);
+               }
+               delete $3;
             }
-            if (expectedType->name) free(expectedType->name);
-            delete expectedType;
-         }
 
-         $$ = createTypeByString(proc->getType());
+            if (procedureTypes.size() != actualArgs.size()) {
+               yyerror("Quantidade de parâmetros diferentes.");
+               $$ = createPrimitiveType(TYPE_ERROR);
+            } else {
+               bool error = false;
+               for (size_t i = 0; i < procedureTypes.size(); i++) {
+                  Type* expectedType = createTypeByString(procedureTypes[i]);
+                  if (!typesAreEquivalent(expectedType, actualArgs[i])) {
+                     yyerror(("Tipo do parâmetro incorreto: pos " + std::to_string(i)).c_str());
+                     $$ = createPrimitiveType(TYPE_ERROR);
+                     error = true;
+                  }
+                  if (expectedType->name) free(expectedType->name);
+                  delete expectedType;
+                  if (!error) {
+                     $$ = createTypeByString(proc->getType());
+                  }
+               }
+            }
+         }
          free($1);
       }
       ;
@@ -657,8 +677,9 @@ extern SymbolTable symbolTable;
          if (!isSpecialType(sym)) {
             yyerror(("Tipo não declarado ou inválido para type: " + std::string($1)).c_str());
             $$ = createPrimitiveType(TYPE_ERROR);
+         } else {
+            $$ = createNonPrimitiveType(std::string($1));
          }
-         $$ = createNonPrimitiveType(std::string($1));
          free($1);
       }
     | TOKEN_REF TOKEN_OPEN_PARENTHESIS type TOKEN_CLOSE_PARENTHESIS {
@@ -773,6 +794,8 @@ bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs) {
    } else if (lhs == TYPE_NAME || rhs == TYPE_NAME) {
       return false;
    } else if (lhs == TYPE_REF || rhs == TYPE_REF) {
+      return false;
+   } else if (lhs == TYPE_ERROR || rhs == TYPE_ERROR) {
       return false;
    } else if (lhs == rhs) {
       return true;
