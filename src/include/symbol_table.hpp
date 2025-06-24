@@ -77,12 +77,10 @@ class Enum : public Symbol {
    Enum(std::string name, std::vector<std::string> values = {})
        : Symbol(name), values(values) { }
 
-   void setFields(const std::vector<std::string>& fields) { // Renomeado de setValues para setFields, mantendo sua intenção do .y
-        this->values = fields;
+   void setValues(const std::vector<std::string>& values) {
+        this->values = values;
     }
    std::vector<std::string> getValues() const { return values; }
-   void setValues(std::vector<std::string> values) { this->values = values; }
-
    void addValue(std::string value) { values.push_back(value); }
 };
 

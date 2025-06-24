@@ -40,6 +40,7 @@ bool isSpecialType(Symbol* sym);
 bool isVariable(Symbol* sym);
 bool isStruct(Symbol* sym);
 bool isProcedure(Symbol* sym);
+bool isEnum(Symbol* sym);
 
 bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs);
 bool typesAreEquivalent(Type* lhs, Type* rhs);

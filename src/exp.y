@@ -1,11 +1,3 @@
-// TODO: Em regras que usam tipos de outras regras, verifique se o tipo é TYPE_ERROR. Se for, apenas ignore a regra pois o erro já foi acusado.
-// Exemplo: assign_stmt: var TOKEN_ATTRIBUTION exp {
-//    if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
-//       continue; // Ignora a regra pois já houve erro anteriormente.
-//    } else if (!typesAreEquivalent($1, $3)) {
-//       yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
-//    }
-// }
 %{
 #include "symbol_table.hpp"
 
@@ -256,14 +248,14 @@ extern SymbolTable symbolTable;
 
    enum_decl:
       enum_header TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES {
-         std::vector<std::string> enumFields;
-         enumFields.push_back(std::string($4));
+         std::vector<std::string> enumValues;
+         enumValues.push_back(std::string($4));
          if ($5) {
-            enumFields.insert(enumFields.end(), $5->begin(), $5->end());
+            enumValues.insert(enumValues.end(), $5->begin(), $5->end());
             delete $5;
          }
 
-         $1->setFields(enumFields);
+         $1->setValues(enumValues);
          symbolTable.exitScope();
          symbolTable.insert(std::unique_ptr<Enum>($1));
          free($4);
@@ -466,32 +458,58 @@ extern SymbolTable symbolTable;
       var:
          NAME {
             auto sym = symbolTable.lookup(std::string($1));
-            if (!isVariable(sym)) {
-               yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
-               $$ = createPrimitiveType(TYPE_ERROR);
-            } else {
+            if (isVariable(sym)) {
                Variable* var = dynamic_cast<Variable*>(sym);
                $$ = createTypeByString(var->getKind());
                free($1);
+            } else if (isEnum(sym)) {
+               Enum* enumSym = dynamic_cast<Enum*>(sym);
+               $$ = createNonPrimitiveType(enumSym->getName());
+               free($1);
+            } else {
+               yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
+               $$ = createPrimitiveType(TYPE_ERROR);
             }
          }
          | exp TOKEN_DOT NAME {
             if ($1->kind == TYPE_NAME) {
                Symbol* symName = symbolTable.lookup(std::string($1->name));
 
-               if (!isStruct(symName)) {
+               if (isStruct(symName)) {
+                  Struct* structType = dynamic_cast<Struct*>(symName);
+
+                  auto fields = structType->getFields();
+                  if (fields.find(std::string($3)) == fields.end()) {
+                     yyerror(("Campo não declarado para: " + getType($1)).c_str());
+                     $$ = createPrimitiveType(TYPE_ERROR);
+                  } else {
+                     $$ = createTypeByString(fields[std::string($3)]);
+                  }
+               } else if (isEnum(symName)) {
+                  Enum* enumType = dynamic_cast<Enum*>(symName);
+
+                  auto values = enumType->getValues();
+                  bool found = false;
+                  for (const auto& value : values) {
+                     if (value == std::string($3)) {
+                        $$ = createPrimitiveType(TYPE_INT);
+                        found = true;
+                        break;
+                     }
+                  }
+
+                  if (!found) {
+                     yyerror(("Campo não declarado para: " + getType($1)).c_str());
+                     $$ = createPrimitiveType(TYPE_ERROR);
+                  }
+               } else if (isSpecialType(symName)) {
+                  yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
+                  $$ = createPrimitiveType(TYPE_ERROR);
+
+               } else {
                   yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
                   $$ = createPrimitiveType(TYPE_ERROR);
                }
-
-               Struct* structType = dynamic_cast<Struct*>(symName);
-
-               auto fields = structType->getFields();
-               if (fields.find(std::string($3)) == fields.end()) {
-                  yyerror(("Campo não declarado para: " + getType($1)).c_str());
-               }
-
-               $$ = createTypeByString(fields[std::string($3)]);
             } else if ($1->kind == TYPE_ERROR) {
                // Ignora
             } else {
@@ -541,6 +559,19 @@ extern SymbolTable symbolTable;
       var TOKEN_ATTRIBUTION exp {
          if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
             // Ignora a regra pois já houve erro anteriormente.
+         } else if ($1->kind == TYPE_NAME) {
+            auto sym = symbolTable.lookup(std::string($1->name));
+            
+            if (isEnum(sym)) {
+               Enum* enumType = dynamic_cast<Enum*>(sym);
+               if ($3->kind != TYPE_INT) {
+                  yyerror(("A expressão de entrada não é do tipo inteiro para enum: " + getType($3)).c_str());
+               } else {
+                  // Atribuição válida para enum
+               }
+            } else if (!typesAreEquivalent($1, $3)) {
+               yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
+            }
          } else if (!typesAreEquivalent($1, $3)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
          }
@@ -729,6 +760,10 @@ bool isStruct(Symbol* sym) {
 
 bool isProcedure(Symbol* sym) {
    return sym && dynamic_cast<Procedure*>(sym) != nullptr;
+}
+
+bool isEnum(Symbol* sym) {
+   return sym && dynamic_cast<Enum*>(sym) != nullptr;
 }
 
 Type* createPrimitiveType(TypeKind kind) {

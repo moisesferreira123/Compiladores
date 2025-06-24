@@ -1,15 +1,14 @@
-program calc
+program personexample
 begin
-   var x := 10 + 10;
    struct Person {
       name: string;
       age: int
    };
-   procedure name()
+   procedure main()
    begin
       var person: Person
    in
-      person.age := 2025 - 2003; // Não é para funcionar
+      person.age := 2025 - 2003;
       if person.age > 18 then
          person.name := "Pedro"
       fi

@@ -1,6 +1,6 @@
 program swapexemple
 begin
-  procedure swap (a:   ref(int) , b : ref(int))
+  procedure swap (a: ref(int), b: ref(int))
     begin
       var tmp: int
     in
@@ -13,12 +13,7 @@ begin
       var x: int;
       var y: int;
       var xr: ref(int);
-      var yr: ref(int);
-      enum teste_enum = {
-        a,
-        b,
-        c
-      }
+      var yr: ref(int)
     in
       x := 42; y := 84;
       if x = y then
@@ -28,6 +23,6 @@ begin
         x := x*y
       fi;
       xr := ref(x); yr := ref(y);
-      swap(xr,yr)
+      swap(x,yr)
     end
 end
