@@ -644,7 +644,7 @@ extern SymbolTable symbolTable;
                bool error = false;
                for (size_t i = 0; i < procedureTypes.size(); i++) {
                   Type* expectedType = createTypeByString(procedureTypes[i]);
-                  if (!typesAreEquivalent(expectedType, actualArgs[i])) {
+                  if (!attributionTypesAreEquivalent(expectedType, actualArgs[i])) {
                      yyerror(("Tipo do parâmetro incorreto: pos " + std::to_string(i)).c_str());
                      $$ = createPrimitiveType(TYPE_ERROR);
                      error = true;
