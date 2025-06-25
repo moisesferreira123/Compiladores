@@ -45,6 +45,7 @@ bool isEnum(Symbol* sym);
 bool primitiveTypesAreEquivalent(TypeKind lhs, TypeKind rhs);
 bool typesAreEquivalent(Type* lhs, Type* rhs);
 bool attributionTypesAreEquivalent(Type* lhs, Type* rhs);
+bool typesAreEquals(Type* lhs, Type* rhs);
 bool typesAreEquivalent(std::string lhs, std::string rhs);
 bool isArithmeticTypes(TypeKind lhs, TypeKind rhs);
 TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs);

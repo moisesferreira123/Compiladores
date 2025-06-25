@@ -854,7 +854,7 @@ bool typesAreEquivalent(Type* lhs, Type* rhs) {
    if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
       return true;
    } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
-      return typesAreEquivalent(lhs->ref, rhs->ref);
+      return typesAreEquals(lhs->ref, rhs->ref);
    } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
       return strcmp(lhs->name, rhs->name) == 0;
    } else {
@@ -865,17 +865,29 @@ bool typesAreEquivalent(Type* lhs, Type* rhs) {
 bool attributionTypesAreEquivalent(Type* lhs, Type* rhs) {
    if (!lhs || !rhs) {
        return false;
-   } else if (hs->kind == TYPE_NULL) {
+   } else if (rhs->kind == TYPE_NULL) {
       return true;
    } else if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
       return  !(lhs->kind == TYPE_INT && rhs->kind == TYPE_FLOAT);
    } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
-      return typesAreEquivalent(lhs->ref, rhs->ref);
+      return typesAreEquals(lhs->ref, rhs->ref);
    } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
       return strcmp(lhs->name, rhs->name) == 0;
    } else {
       return false;
    }
+}
+
+bool typesAreEquals(Type* lhs, Type* rhs) {
+   if (!lhs || !rhs) {
+      return false;
+   } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
+      return typesAreEquals(lhs->ref, rhs->ref);
+   } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
+      return strcmp(lhs->name, rhs->name) == 0;
+   }
+   
+   return lhs->kind == rhs->kind;
 }
 
 TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs) {
