@@ -1,6 +1,6 @@
 # Compilador para a Linguagem Comp25.4
 
-Este repositório contém a implementação de um compilador para a variante Comp25.4 da linguagem Comp25.x, desenvolvida como parte da disciplina DIM00164 - Compiladores na Universidade Federal do Rio Grande do Norte (UFRN).
+Este repositório contém a implementação de um compilador para a variante Comp25.4 da linguagem Comp25.x, desenvolvida como parte da disciplina DIM0164 - Compiladores na Universidade Federal do Rio Grande do Norte (UFRN).
 
 ## Sumário
 
@@ -115,7 +115,7 @@ DECL → ... | enum NAME "=" "{" NAME {"," NAME} "}"
 
 Exemplo:
 
-```comp25.4
+```
 program day_of_week
 begin
    enum dayOfWeek = {
