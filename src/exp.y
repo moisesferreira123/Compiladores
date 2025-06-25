@@ -125,6 +125,10 @@ extern SymbolTable symbolTable;
          $1->setParams(paramTypes);
          $1->setType(getType($5));
       } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
+         /// TODO: Definir um tipo para stmt_list e verificar se é igual ao return_type:
+            /// stmt_list tem um tipo definido por seus stmt
+            /// stmt tem seu tipo definido por return_stmt
+            /// Caso não seja definido tipo, é void
          symbolTable.exitScope();
          symbolTable.insert(std::unique_ptr<Procedure>($1));
       }
