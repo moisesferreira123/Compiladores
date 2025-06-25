@@ -849,6 +849,7 @@ bool typesAreEquivalent(Type* lhs, Type* rhs) {
    }
 
    if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
+    //TODO: Bugfix: declaração de int atribuindo um float não dá erro
       return true;
    } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
       return typesAreEquivalent(lhs->ref, rhs->ref);
