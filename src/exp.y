@@ -48,7 +48,6 @@ extern SymbolTable symbolTable;
 %right TOKEN_POT
 %left TOKEN_DOT
 %right UMINUS
-%right TOKEN_ATTRIBUTION
 
 %start program
 
@@ -81,7 +80,7 @@ extern SymbolTable symbolTable;
       TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
          if ($4->kind == TYPE_ERROR || $5->kind == TYPE_ERROR) {
             // Ignora a regra pois já houve erro anteriormente.
-         } else if ($5->kind != TYPE_NULL && (!typesAreEquivalent($4, $5))) {
+         } else if (!attributionTypesAreEquivalent($4, $5)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($4) + " e " + getType($5)).c_str());
          } else {
             std::string varName = std::string($2);
@@ -569,17 +568,17 @@ extern SymbolTable symbolTable;
                } else {
                   // Atribuição válida para enum
                }
-            } else if (!typesAreEquivalent($1, $3)) {
+            } else if (!attributionTypesAreEquivalent($1, $3)) {
                yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
             }
-         } else if (!typesAreEquivalent($1, $3)) {
+         } else if (!attributionTypesAreEquivalent($1, $3)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
          }
       }
       | deref_var TOKEN_ATTRIBUTION exp {
          if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
             // Ignora a regra pois já houve erro anteriormente.
-         } else if (!typesAreEquivalent($1, $3)) {
+         } else if (!attributionTypesAreEquivalent($1, $3)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
          }
       }
@@ -849,8 +848,23 @@ bool typesAreEquivalent(Type* lhs, Type* rhs) {
    }
 
    if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
-    //TODO: Bugfix: declaração de int atribuindo um float não dá erro
       return true;
+   } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
+      return typesAreEquivalent(lhs->ref, rhs->ref);
+   } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
+      return strcmp(lhs->name, rhs->name) == 0;
+   } else {
+      return false;
+   }
+}
+
+bool attributionTypesAreEquivalent(Type* lhs, Type* rhs) {
+   if (!lhs || !rhs) {
+       return false;
+   } else if (hs->kind == TYPE_NULL) {
+      return true;
+   } else if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
+      return  !(lhs->kind == TYPE_INT && rhs->kind == TYPE_FLOAT);
    } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
       return typesAreEquivalent(lhs->ref, rhs->ref);
    } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
