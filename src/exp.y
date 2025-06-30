@@ -42,7 +42,7 @@ extern SymbolTable symbolTable;
 %left TOKEN_OR
 %left TOKEN_AND
 %right TOKEN_NOT
-%nonassoc TOKEN_COMP TOKEN_EQUAL
+%nonassoc TOKEN_LESS TOKEN_LESS_EQUAL TOKEN_GREATER TOKEN_GREATER_EQUAL TOKEN_DIFF TOKEN_EQUAL
 %left TOKEN_ADD TOKEN_SUB
 %left TOKEN_MULT TOKEN_DIV
 %right TOKEN_POT
@@ -339,17 +339,9 @@ extern SymbolTable symbolTable;
             $$ = createPrimitiveType(TYPE_BOOL);
          }
       }
-      | exp TOKEN_COMP exp {
-         if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
+      | exp rel_op exp {
+        if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
             yyerror("A comparação deve ser realizada para tipos primitivos equivalentes");
-            $$ = createPrimitiveType(TYPE_ERROR);
-         } else {
-            $$ = createPrimitiveType(TYPE_BOOL);
-         }
-      }
-      | exp TOKEN_EQUAL exp {
-         if (!typesAreEquivalent($1, $3) || $1->kind == TYPE_NAME) {
-            yyerror("A comparação deve ser realizada para tipos equivalentes");
             $$ = createPrimitiveType(TYPE_ERROR);
          } else {
             $$ = createPrimitiveType(TYPE_BOOL);
@@ -432,6 +424,9 @@ extern SymbolTable symbolTable;
          }
       }
       ;
+  rel_op:
+    TOKEN_GREATER | TOKEN_GREATER_EQUAL | TOKEN_LESS | TOKEN_LESS_EQUAL | TOKEN_DIFF | TOKEN_EQUAL
+    ;
 
    ref_var:
       TOKEN_REF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
