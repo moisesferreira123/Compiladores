@@ -179,7 +179,7 @@ of {
 
 "<"|"<="|">"|">="|"<>" { 
     numCols += yyleng; 
-    return TOKEN_COMP; 
+    // return TOKEN_COMP; 
 }
 
 "=" { 

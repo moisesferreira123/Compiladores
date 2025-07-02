@@ -11,10 +11,17 @@ set(INTERMEDIATE_DIR ${BUILD_DIR}/intermediate)
 
 # Fontes
 set(SYMBOL_TABLE ${HEADERS_DIR}/symbol_table.cpp)
+set(CODEGEN ${HEADERS_DIR}/tac/codegen/codegen.cpp) 
 set(MAIN ${SRC_DIR}/main.cpp)
 set(LEX ${SRC_DIR}/exp.l)
 set(YACC ${SRC_DIR}/exp.y)
-set(HEADERS ${HEADERS_DIR}/symbol_table.hpp ${HEADERS_DIR}/type_utils.hpp)
+
+set(HEADERS 
+    ${HEADERS_DIR}/symbol_table.hpp 
+    ${HEADERS_DIR}/type_utils.hpp
+    ${HEADERS_DIR}/tac/tac.hpp
+    ${HEADERS_DIR}/tac/codegen/codegen.hpp
+)
 
 # Arquivos gerados
 set(LEX_C ${INTERMEDIATE_DIR}/lex.yy.c)
@@ -29,7 +36,7 @@ add_custom_command(
     OUTPUT ${YACC_C} ${YACC_H}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${INTERMEDIATE_DIR}
     COMMAND ${BISON_EXECUTABLE} -d -o ${YACC_C} ${YACC}
-    DEPENDS ${YACC}
+    DEPENDS ${YACC} ${HEADERS}
     COMMENT "Running Bison"
 )
 
@@ -47,7 +54,11 @@ set_source_files_properties(${YACC_C} PROPERTIES LANGUAGE CXX)
 
 # Adicionar biblioteca para symbol_table
 add_library(symbol_table OBJECT ${SYMBOL_TABLE})
-target_include_directories(symbol_table PUBLIC ${SRC_DIR})
+target_include_directories(symbol_table PUBLIC ${HEADERS_DIR})
+
+# Adicionar biblioteca para o nosso gerador de código
+add_library(codegen_obj OBJECT ${CODEGEN})
+target_include_directories(codegen_obj PUBLIC ${HEADERS_DIR})
 
 # Adicionar biblioteca para main
 add_library(main_obj OBJECT ${MAIN})
@@ -64,6 +75,7 @@ target_include_directories(yacc_obj PRIVATE ${HEADERS_DIR} ${INTERMEDIATE_DIR})
 # Compilar executável
 add_executable(exp
     $<TARGET_OBJECTS:symbol_table>
+    $<TARGET_OBJECTS:codegen_obj>
     $<TARGET_OBJECTS:main_obj>
     $<TARGET_OBJECTS:lex_obj>
     $<TARGET_OBJECTS:yacc_obj>

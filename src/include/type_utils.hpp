@@ -26,6 +26,11 @@ struct Type {
    Type* ref;
 };
 
+struct ExpResult {
+    Type* type;         // O tipo do resultado (que você já tem)
+    std::string address;  // Onde o valor está (ex: "x", "5", "t3")
+};
+
 class Symbol;
 class Variable;
 class Program;

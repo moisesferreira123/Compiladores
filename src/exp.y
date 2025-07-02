@@ -1,9 +1,13 @@
 %{
 #include "symbol_table.hpp"
+#include "codegen.hpp"
+#include "tac.hpp"
 
 extern int numLines;
 extern int numCols;
 extern SymbolTable symbolTable;
+extern CodeEmitter codeEmitter;
+extern
 %}
 
 %code requires {
@@ -16,6 +20,7 @@ extern SymbolTable symbolTable;
     char* nval;
     char* sval;
     Type* type; // Type* é conhecido pelo %code requires
+    ExpResult* exp_res;
     Procedure* procedure; // Procedure* é conhecido pelo %code requires
     Struct* stc;          // Struct* é conhecido pelo %code requires
     Enum* enm;            // Enum* é conhecido pelo %code requires
@@ -33,7 +38,7 @@ extern SymbolTable symbolTable;
 %token TOKEN_BEGIN TOKEN_END TOKEN_VAR TOKEN_IN TOKEN_STRUCT  TOKEN_NULL
 %token TOKEN_NEW TOKEN_REF TOKEN_DEREF TOKEN_TRUE TOKEN_FALSE TOKEN_IF TOKEN_THEN
 %token TOKEN_ELSE TOKEN_FI TOKEN_WHILE TOKEN_DO TOKEN_OD TOKEN_RETURN TOKEN_ENUM
-%token TOKEN_ATTRIBUTION TOKEN_COLON TOKEN_OPEN_PARENTHESIS TOKEN_OF
+%token TOKEN_ATTRIBUTION TOKEN_COLON TOKEN_OPEN_PARENTHESIS TOKEN_OF 
 %token TOKEN_CLOSE_PARENTHESIS TOKEN_SEMICOLON TOKEN_COMMA TOKEN_OPEN_BRACES
 %token TOKEN_CLOSE_BRACES TOKEN_CIPHER TOKEN_ERROR
 %token TOKEN_INT TOKEN_FLOAT TOKEN_STRING
@@ -52,13 +57,16 @@ extern SymbolTable symbolTable;
 %start program
 
 /// Associação dos não terminais aos tipos
-%type <type>  type return_type literal bool_literal var ref_var deref_var exp call_stmt var_decl2
+%type <type>  type return_type 
 %type <param> paramfield_decl
 %type <args>  call_args call_args2 procedure_params procedure_params2 record_fields record_fields2
 %type <stc>   record_header
 %type <enm>   enum_header
 %type <enumfld> enum_field
 %type <procedure> procedure_header
+
+%type <exp_res> literal bool_literal var ref_var deref_var exp call_stmt var_decl2 return_stmt2 return_stmt
+
 
 %%
 
@@ -78,29 +86,37 @@ extern SymbolTable symbolTable;
 
    var_decl:
       TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
-         if ($4->kind == TYPE_ERROR || $5->kind == TYPE_ERROR) {
+         if ($4->kind == TYPE_ERROR || $5->type->kind == TYPE_ERROR) {
             // Ignora a regra pois já houve erro anteriormente.
-         } else if (!attributionTypesAreEquivalent($4, $5)) {
+         } else if (!attributionTypesAreEquivalent($4, $5->type)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($4) + " e " + getType($5)).c_str());
          } else {
             std::string varName = std::string($2);
             std::string varKind = getType($4);
 
+            if($5->type->kind != TYPE_NULL) {
+               emmiter.emit(OpCode::TAC_VAR, varName, $5->address, ""); 
+            } 
+
             symbolTable.insert(std::make_unique<Variable>(varName, varKind));
             free($2);
+            delete $5;
          }
       }
       | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
-         if ($4->kind == TYPE_ERROR) {
+         if ($4->type->kind == TYPE_ERROR) {
             // Ignora a regra pois já houve erro anteriormente.
-         } else if ($4->kind == TYPE_NULL) {
+         } else if ($4->type->kind == TYPE_NULL) {
             yyerror("A expressão não pode assumir o valor null na inicialização");
          } else {
             std::string varName = std::string($2);
             std::string varKind = getType($4);
 
+            emmiter.emit(OpCode::TAC_VAR, varName, $4->address, "");
+
             symbolTable.insert(std::make_unique<Variable>(varName, varKind));
             free($2);
+            delete $4;
          }
       };
 
@@ -110,7 +126,7 @@ extern SymbolTable symbolTable;
          $$ = $2;
       }
       | {
-         $$ = createPrimitiveType(TYPE_NULL);
+         $$->type = createPrimitiveType(TYPE_NULL);
       }
       ;
 
@@ -228,7 +244,7 @@ extern SymbolTable symbolTable;
       }
       | {
          $$ = new Type;
-         $$->kind = TYPE_VOID;
+         $$->type->kind = TYPE_VOID;
          $$->name = nullptr;
          $$->ref = nullptr;
       }
@@ -310,88 +326,157 @@ extern SymbolTable symbolTable;
 
    exp:
       exp TOKEN_AND exp {
-         if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
-            $$ = createPrimitiveType(TYPE_ERROR);
-         } else if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
+         if ($1->type->kind == TYPE_ERROR || $3->type->kind == TYPE_ERROR) {
+            $$ = ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
+         } else if ($1->type->kind != TYPE_BOOL || $3->type->kind != TYPE_BOOL) {
             yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = createPrimitiveType(TYPE_BOOL);
+            std::string temp = new_temp(); 
+            emitter.emit(OpCode::TAC_AND, temp, $1->address, $3->address);
+
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(TYPE_BOOL);
+            $$->address = temp; 
          }
+         delete $1;
+         delete $3;
       }
       | exp TOKEN_OR exp {
-         if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
-            $$ = createPrimitiveType(TYPE_ERROR);
-         } else if ($1->kind != TYPE_BOOL || $3->kind != TYPE_BOOL) {
+         if ($1->type->kind == TYPE_ERROR || $3->type->kind == TYPE_ERROR) {
+            $$ = ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
+         } else if ($1->type->kind != TYPE_BOOL || $3->type->kind != TYPE_BOOL) {
             yyerror(("As expressões devem ser do tipo booleano e foram definidos no tipo: " + getType($1) + " e " + getType($3)).c_str());
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = createPrimitiveType(TYPE_BOOL);
+            std::string temp = new_temp(); 
+            emitter.emit(OpCode::TAC_OR, temp, $1->address, $3->address);
+
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(TYPE_BOOL);
+            $$->address = temp; 
          }
+         delete $1;
+         delete $3;
       }
       | TOKEN_NOT exp {
-         if ($2->kind == TYPE_ERROR) {
-            $$ = createPrimitiveType(TYPE_ERROR);
-         } else if ($2->kind != TYPE_BOOL) {
+         if ($2->type->kind == TYPE_ERROR) {
+            $$ = ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
+         } else if ($2->type->kind != TYPE_BOOL) {
             yyerror(("A expressão deve ser do tipo booleano e foi definido no tipo: " + getType($2)).c_str());
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = createPrimitiveType(TYPE_BOOL);
+            std::string temp = new_temp();
+
+            emitter.emit(OpCode::TAC_NOT, temp, $2->address, "");
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(TYPE_BOOL);
+            $$->address = temp; 
          }
+         delete $2;
       }
       | exp rel_op exp {
-        if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
+        if (!primitiveTypesAreEquivalent($1->type->kind, $3->type->kind)) {
             yyerror("A comparação deve ser realizada para tipos primitivos equivalentes");
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = createPrimitiveType(TYPE_BOOL);
+            std::string temp = new_temp();
+            
+            emitter.emit(OpCode::TAC_COMP, temp, $1->address, $3->address);
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(TYPE_BOOL);
+            $$->address = temp; 
          }
+         delete $1;
+         delete $3;
       }
       | exp TOKEN_ADD exp {
-         if (!primitiveTypesAreEquivalent($1->kind, $3->kind)) {
+        if (!primitiveTypesAreEquivalent($1->type->kind, $3->type->kind)) {
             yyerror("A soma deve ser realizada para tipos primitivos equivalentes");
-            $$ = createPrimitiveType(TYPE_ERROR);
-         } else {
-            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
-         }
+            $$ = new ExpResult{ createPrimitiveType(TYPE_ERROR), "" };
+        } else {
+            std::string temp = new_temp(); // Pega um novo temporário, ex: "_tx"
+            
+            // Emite a instrução TAC! Usa os endereços dos filhos
+            emitter.emit(OpCode::TAC_ADD, temp, $1->address, $3->address);
+
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(getPrimitiveTypeOfOperation($1->type->kind, $3->type->kind));
+            $$->address = temp; // O resultado desta soma está agora em "_tx"
+        }
+        delete $1;
+        delete $3;
       }
       | exp TOKEN_SUB exp {
-         if (!isArithmeticTypes($1->kind, $3->kind)) {
+         if (!isArithmeticTypes($1->type->kind, $3->type->kind)) {
             yyerror("A subtração deve ser realizada para tipos aritméticos equivalentes");
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = new ExpResult{ createPrimitiveType(TYPE_ERROR), "" };
          } else {
-            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+            std::string temp = new_temp();  
+            emitter.emit(OpCode::TAC_SUB, temp, $1->address, $3->address);
+
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(getPrimitiveTypeOfOperation($1->type->kind, $3->type->kind));
+            $$->address = temp;
          }
+         delete $1;
+         delete $3;
+
       }
       | exp TOKEN_MULT exp {
-         if (!isArithmeticTypes($1->kind, $3->kind)) {
+         if (!isArithmeticTypes($1->type->kind, $3->type->kind)) {
             yyerror("A multiplicação deve ser realizada para tipos aritméticos equivalentes");
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = new ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+            std::string temp = new_temp();
+            emitter.emit(OpCode::TAC_MULT, temp, $1->address, $3->address);
+
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(getPrimitiveTypeOfOperation($1->type->kind, $3->type->kind));
+            $$->address = temp;
          }
+         delete $1;
+         delete $3;
       }
       | exp TOKEN_DIV exp {
-         if (!isArithmeticTypes($1->kind, $3->kind)) {
+         if (!isArithmeticTypes($1->type->kind, $3->type->kind)) {
             yyerror("A divisão deve ser realizada para tipos aritméticos equivalentes");
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = new ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+            std::string temp = new_temp();
+            emitter.emit(OpCode::TAC_DIV, temp, $1->address, $3->address);
+
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(getPrimitiveTypeOfOperation($1->type->kind, $3->type->kind));
+            $$->address = temp;
          }
+         delete $1;
+         delete $3;
       }
       | exp TOKEN_POT exp {
-         if (!isArithmeticTypes($1->kind, $3->kind)) {
+         if (!isArithmeticTypes($1->type->kind, $3->type->kind)) {
             yyerror("A potenciação deve ser realizada para tipos aritméticos equivalentes");
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = new ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($1->kind, $3->kind));
+            std::string temp = new_temp();
+            emitter.emit(OpCode::TAC_POT, temp, $1->address, $3->address);
+
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(getPrimitiveTypeOfOperation($1->type->kind, $3->type->kind));
+            $$->address = temp;
          }
+         delete $1;
+         delete $3;
       }
       | literal {
-         $$ = $1;
+         $$ = new ExpResult();
+         $$->type = $1->type; 
+         $$->address = $1->address; 
       }
       | call_stmt {
-         $$ = $1;
+         $$ = new ExpResult();
+         $$->type = $1->type; 
+         $$->address = $1->address; 
       }
       | TOKEN_NEW NAME {
          auto sym = symbolTable.lookup(std::string($2));
@@ -404,24 +489,36 @@ extern SymbolTable symbolTable;
          }
       }
       | var {
-         $$ = $1;
+         $$ = new ExpResult();
+         $$->type = $1->type; 
+         $$->address = $1->address;
       }
       | ref_var {
-         $$ = $1;
+         $$ = new ExpResult();
+         $$->type = $1->type; 
+         $$->address = $1->address;
       }
       | deref_var {
-         $$ = $1;
+         $$ = new ExpResult();
+         $$->type = $1->type; 
+         $$->address = $1->address;
       }
       | TOKEN_OPEN_PARENTHESIS exp TOKEN_CLOSE_PARENTHESIS {
          $$ = $2;
       }
       | TOKEN_SUB exp %prec UMINUS {
-         if (!isArithmeticTypes($2->kind, $2->kind)) {
+         if (!isArithmeticTypes($2->type->kind, $2->type->kind)) {
             yyerror("O menos unário deve ser realizada para tipos aritméticos");
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = new ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = createPrimitiveType(getPrimitiveTypeOfOperation($2->kind, $2->kind));
+            std::string temp = new_temp();
+
+            emitter.emit(OpCode::TAC_UNARY_MINUS, temp, $2->address, "");
+            $$ = new ExpResult();
+            $$->type = createPrimitiveType(getPrimitiveTypeOfOperation($2->type->kind, $2->type->kind));
+            $$->address = temp;
          }
+         delete $2;
       }
       ;
   rel_op:
@@ -430,58 +527,96 @@ extern SymbolTable symbolTable;
 
    ref_var:
       TOKEN_REF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
-         $$ = createReferenceType($3);
+         $$ = new ExpResult();   
+         if ($3->type->kind == TYPE_ERROR) {
+            yyerror(("A variável precisa ser um tipo válido: " + getType($3)).c_str());
+            $$->type = createPrimitiveType(TYPE_ERROR);
+         } else if ($3->type->kind == TYPE_REF) {
+            yyerror(("A variável não pode ser uma referência: " + getType($3)).c_str());
+            $$->type = createPrimitiveType(TYPE_ERROR);
+         } else {
+            $$->type = createReferenceType($3->type); 
+            $$->address = $3->address; 
+         }
+         delete $3;
       }
       ;
 
    deref_var:
       TOKEN_DEREF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
-         if ($3->kind != TYPE_REF) {
+         if ($3->type->kind != TYPE_REF) {
             yyerror(("A variável precisa ser uma referência: " + getType($3)).c_str());
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = new ExpResult{createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = $3->ref;
+            td::string temp = new_temp();
+
+            emitter.emit(OpCode::TAC_DEREF, temp, $3->address, "");
+            $$ = new ExpResult();
+            $$->type = $3->type->ref; 
+            $$->address = $3->address;  
          }
+         delete $3;
       }
       | TOKEN_DEREF TOKEN_OPEN_PARENTHESIS deref_var TOKEN_CLOSE_PARENTHESIS {
-         if ($3->kind != TYPE_REF) {
+         if ($3->type->kind != TYPE_REF) {
             yyerror(("A variável precisa ser uma referência: " + getType($3)).c_str());
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$ = new ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
-            $$ = $3->ref;
+            std::string temp = new_temp();
+
+            emitter.emit(OpCode::TAC_DEREF, temp, $3->address, "");
+            $$ = new ExpResult();
+            $$->type = $3->type->ref; 
+            $$->address = $3->address;             
          }
+         delete $3; 
       }
       ;
 
       var:
          NAME {
-            auto sym = symbolTable.lookup(std::string($1));
-            if (isVariable(sym)) {
+            $$ = new ExpResult();
+            std::string varName = std::string($1);
+
+            auto sym = symbolTable.lookup(varName);
+            if (sym == nullptr) {
+               yyerror(("Símbolo não encontrado: " + varName).c_str());
+               $$->type = createPrimitiveType(TYPE_ERROR);
+            } else if (isVariable(sym)) {
                Variable* var = dynamic_cast<Variable*>(sym);
-               $$ = createTypeByString(var->getKind());
-               free($1);
+               $$->type = createTypeByString(var->getKind());
+               $$->address = varName;  // Nome da variável é o endereço no TAC
             } else if (isEnum(sym)) {
                Enum* enumSym = dynamic_cast<Enum*>(sym);
-               $$ = createNonPrimitiveType(enumSym->getName());
-               free($1);
+               $$->type = createNonPrimitiveType(enumSym->getName());
+               $$->address = varName;
+
+               // Ver se precisa emitir enum para o TAC
+               // emitter.emit(OpCode::TAC_VAR, varName, "", "");
             } else {
-               yyerror(("Simbolo não encontrado: " + std::string($1)).c_str());
-               $$ = createPrimitiveType(TYPE_ERROR);
+                  yyerror(("Símbolo de tipo desconhecido: " + varName).c_str());
+                  $$->type = createPrimitiveType(TYPE_ERROR);
             }
+
+        free($1);
          }
          | exp TOKEN_DOT NAME {
-            if ($1->kind == TYPE_NAME) {
+            $$ = new ExpResult();
+            if ($1->type->kind == TYPE_NAME) {
                Symbol* symName = symbolTable.lookup(std::string($1->name));
 
                if (isStruct(symName)) {
                   Struct* structType = dynamic_cast<Struct*>(symName);
-
                   auto fields = structType->getFields();
-                  if (fields.find(std::string($3)) == fields.end()) {
+                  std::string memberName = std::string($3);
+
+                  if (fields.find(memberName) == fields.end()) {
                      yyerror(("Campo não declarado para: " + getType($1)).c_str());
-                     $$ = createPrimitiveType(TYPE_ERROR);
+                     $$->type = createPrimitiveType(TYPE_ERROR);
                   } else {
-                     $$ = createTypeByString(fields[std::string($3)]);
+                     $$->type = createTypeByString(fields[memberName]);
+                     std::string temp = new_temp();
+                     emitter.emit(OpCode::TAC_MEMBER_ACCESS, temp, $1->address, memberName);
                   }
                } else if (isEnum(symName)) {
                   Enum* enumType = dynamic_cast<Enum*>(symName);
@@ -490,7 +625,8 @@ extern SymbolTable symbolTable;
                   bool found = false;
                   for (const auto& value : values) {
                      if (value == std::string($3)) {
-                        $$ = createPrimitiveType(TYPE_INT);
+                        $$->type = createPrimitiveType(TYPE_INT);
+                        $$->address = std::to_string(enumType->getValue(value));
                         found = true;
                         break;
                      }
@@ -498,50 +634,66 @@ extern SymbolTable symbolTable;
 
                   if (!found) {
                      yyerror(("Campo não declarado para: " + getType($1)).c_str());
-                     $$ = createPrimitiveType(TYPE_ERROR);
+                     $$->type = createPrimitiveType(TYPE_ERROR);
                   }
                } else if (isSpecialType(symName)) {
                   yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
-                  $$ = createPrimitiveType(TYPE_ERROR);
+                  $$->type = createPrimitiveType(TYPE_ERROR);
 
                } else {
                   yyerror(("Tipo não declarado ou inválido para var: " + getType($1)).c_str());
-                  $$ = createPrimitiveType(TYPE_ERROR);
+                  $$->type = createPrimitiveType(TYPE_ERROR);
                }
-            } else if ($1->kind == TYPE_ERROR) {
+            } else if ($1->type->kind == TYPE_ERROR) {
                // Ignora
             } else {
                yyerror(("Tipo inválido para var: " + getType($1)).c_str());
-               $$ = createPrimitiveType(TYPE_ERROR);
+               $$->type = createPrimitiveType(TYPE_ERROR);
             }
             free($3);
+            delete $1; 
          }
       ;
 
    literal:
       FLOAT_LITERAL {
-         $$ = createPrimitiveType(TYPE_FLOAT);
+         $$ = new ExpResult();
+         $$->type = createPrimitiveType(TYPE_FLOAT);
+         $$->address = std::to_string($1); 
       }
       | INT_LITERAL {
-         $$ = createPrimitiveType(TYPE_INT);
+         $$ = new ExpResult();
+         $$->type = createPrimitiveType(TYPE_INT);
+         $$->address = std::to_string($1); 
       }
       | STRING_LITERAL  {
-         $$ = createPrimitiveType(TYPE_STRING);
+         $$ = new ExpResult();
+         $$->type = createPrimitiveType(TYPE_STRING);
+         $$->address = std::to_string($1); 
       }
       | bool_literal {
-         $$ = createPrimitiveType(TYPE_BOOL);
+         $$ = new ExpResult();
+         $$->type = createPrimitiveType(TYPE_BOOL);
+         $$->address = std::to_string($1); 
       }
       | TOKEN_NULL {
-         $$ = createPrimitiveType(TYPE_NULL);
+         $$ = new ExpResult();
+         $$->type = createPrimitiveType(TYPE_NULL);
+         $$->address = std::to_string($1); 
       }
       ;
 
    bool_literal:
       TOKEN_TRUE {
-         $$ = createPrimitiveType(TYPE_BOOL);
+         $$ = new ExpResult();
+         $$->type = createPrimitiveType(TYPE_BOOL);
+         $$->address = std::to_string($1);
+
       }
       | TOKEN_FALSE {
-         $$ = createPrimitiveType(TYPE_BOOL);
+         $$ = new ExpResult();
+         $$->type = createPrimitiveType(TYPE_BOOL);
+         $$->address = std::to_string($1);
       }
       ;
 
@@ -555,14 +707,14 @@ extern SymbolTable symbolTable;
 
    assign_stmt:
       var TOKEN_ATTRIBUTION exp {
-         if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
+         if ($1->type->kind == TYPE_ERROR || $3->type->kind == TYPE_ERROR) {
             // Ignora a regra pois já houve erro anteriormente.
-         } else if ($1->kind == TYPE_NAME) {
+         } else if ($1->type->kind == TYPE_NAME) {
             auto sym = symbolTable.lookup(std::string($1->name));
             
             if (isEnum(sym)) {
                Enum* enumType = dynamic_cast<Enum*>(sym);
-               if ($3->kind != TYPE_INT) {
+               if ($3->type->kind != TYPE_INT) {
                   yyerror(("A expressão de entrada não é do tipo inteiro para enum: " + getType($3)).c_str());
                } else {
                   // Atribuição válida para enum
@@ -572,49 +724,109 @@ extern SymbolTable symbolTable;
             }
          } else if (!attributionTypesAreEquivalent($1, $3)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
+         } else{
+            emitter.emit(OpCode::TAC_ASSIGN, $1->address, $3->address);
          }
+         delete $1;
+         delete $3;
       }
       | deref_var TOKEN_ATTRIBUTION exp {
-         if ($1->kind == TYPE_ERROR || $3->kind == TYPE_ERROR) {
+         if ($1->type->kind == TYPE_ERROR || $3->type->kind == TYPE_ERROR) {
             // Ignora a regra pois já houve erro anteriormente.
          } else if (!attributionTypesAreEquivalent($1, $3)) {
             yyerror(("A expressão de entrada não é de um tipo equivalente a definida: " + getType($1) + " e " + getType($3)).c_str());
+         } else{
+            emitter.emit(OpCode::TAC_DEREF_ASSIGN, $1->address, $3->address);
          }
+         delete $1;
+         delete $3;
       }
       ;
 
    if_stmt:
       TOKEN_IF exp {
-         if ($2->kind == TYPE_ERROR) {
+         if ($2->type->kind == TYPE_ERROR) {
             // Ignora
-         } else if ($2->kind != TYPE_BOOL) {
+         } else if ($2->type->kind != TYPE_BOOL) {
             yyerror(("Tipo inválido para if: " + getType($2)).c_str());
+         } else{
+            std::string label_false  = new_label();
+            emitter.emit(OpCode::TAC_IF_FALSE_GOTO, label_false, $2->address);
+
+            // Guardamos esse rótulo na pilha para usá-lo depois.
+            label_stack.push_back(label_false);
+
          }
+         delete $2;
       } TOKEN_THEN stmt_list if_stmt2 TOKEN_FI
       ;
 
    if_stmt2:
-      TOKEN_ELSE stmt_list
-      |
+      TOKEN_ELSE {
+         std::string label_end = new_label(); // evitar o else
+         emitter.emit(OpCode::TAC_GOTO, label_end);
+
+         std::string label_false = label_stack.back();
+         label_stack.pop_back();
+
+         emitter.emit(OpCode::TAC_LABEL, label_false);
+         label_stack.push_back(label_end);
+      }
+      stmt_list{
+         std::string label_end = label_stack.back();
+         label_stack.pop_back();
+         emitter.emit(OpCode::TAC_LABEL, label_end);
+      }
+      | {
+         std::string label_end = label_stack.back();
+         label_stack.pop_back();
+         emitter.emit(OpCode::TAC_LABEL, label_end);
+      }
       ;
 
    while_stmt:
-      TOKEN_WHILE exp {
-         if ($2->kind == TYPE_ERROR) {
+      TOKEN_WHILE{
+         std::string label_begin = new_label();
+         emitter.emit(OpCode::TAC_LABEL, label_begin);
+         label_stack.push_back(label_begin);
+
+      } exp {
+         if ($2->type->kind == TYPE_ERROR) {
             // Ignora
-         } else if ($2->kind != TYPE_BOOL) {
+         } else if ($2->type->kind != TYPE_BOOL) {
             yyerror(("Tipo inválido para while: " + getType($2)).c_str());
+         } else{
+            std::string label_end = new_label();
+            emitter.emit(OpCode::TAC_IF_FALSE_GOTO, label_end , $2->address);
+            label_stack.push_back(label_end);
          }
-      } TOKEN_DO stmt_list TOKEN_OD
+         delete $3;
+      } TOKEN_DO stmt_list{
+
+         std::string label_end = label_stack.back(); label_stack.pop_back();
+         std::string label_begin = label_stack.back(); label_stack.pop_back();
+
+         emitter.emit(OpCode::TAC_GOTO, label_begin);
+         emitter.emit(OpCode::TAC_LABEL, label_end);
+      } TOKEN_OD
       ;
 
    return_stmt:
-      TOKEN_RETURN return_stmt2
+      TOKEN_RETURN return_stmt2 { 
+         emitter.emit(OpCode::TAC_RETURN, $2->address);
+         delete $2;
+      }
       ;
 
    return_stmt2:
-      exp
-      |
+      exp {
+         $$ = $1;
+      }
+      | {
+        $$ = new ExpResult();
+        $$->type = createPrimitiveType(TYPE_VOID);
+        $$->address = ""; 
+      }
       ;
 
    call_stmt:
@@ -723,21 +935,21 @@ void yyerror(const char* s) {
 }
 
 std::string getType(Type* type) {
-   if (type->kind == TYPE_INT) {
+   if (type->type->kind == TYPE_INT) {
       return "int";
-   } else if (type->kind == TYPE_FLOAT) {
+   } else if (type->type->kind == TYPE_FLOAT) {
       return "float";
-   } else if (type->kind == TYPE_BOOL) {
+   } else if (type->type->kind == TYPE_BOOL) {
       return "bool";
-   } else if (type->kind == TYPE_STRING) {
+   } else if (type->type->kind == TYPE_STRING) {
       return "string";
-   } else if (type->kind == TYPE_VOID) {
+   } else if (type->type->kind == TYPE_VOID) {
       return "void";
-   } else if (type->kind == TYPE_NAME) {
+   } else if (type->type->kind == TYPE_NAME) {
       return type->name;
-   } else if (type->kind == TYPE_NULL) {
+   } else if (type->type->kind == TYPE_NULL) {
       return "null";
-   } else if (type->kind == TYPE_ERROR) {
+   } else if (type->type->kind == TYPE_ERROR) {
       return "error";
    }
 
@@ -766,7 +978,7 @@ bool isEnum(Symbol* sym) {
 
 Type* createPrimitiveType(TypeKind kind) {
    auto t = new Type;
-   t->kind = kind;
+   t->type->kind = kind;
    t->name = nullptr;
    t->ref = nullptr;
 
@@ -774,7 +986,7 @@ Type* createPrimitiveType(TypeKind kind) {
 }
 Type* createNonPrimitiveType(std::string name) {
    auto t = new Type;
-   t->kind = TYPE_NAME;
+   t->type->kind = TYPE_NAME;
    t->name = strdup(name.c_str());
    t->ref = nullptr;
 
@@ -782,7 +994,7 @@ Type* createNonPrimitiveType(std::string name) {
 }
 Type* createReferenceType(Type* refType) {
    auto t = new Type;
-   t->kind = TYPE_REF;
+   t->type->kind = TYPE_REF;
    t->name = nullptr;
    t->ref = refType;
 
@@ -795,25 +1007,25 @@ Type* createTypeByString(std::string name) {
    t->ref = nullptr;
 
    if (name == "int") {
-      t->kind = TYPE_INT;
+      t->type->kind = TYPE_INT;
    } else if (name == "float") {
-      t->kind = TYPE_FLOAT;
+      t->type->kind = TYPE_FLOAT;
    } else if (name == "bool") {
-      t->kind = TYPE_BOOL;
+      t->type->kind = TYPE_BOOL;
    } else if (name == "string") {
-      t->kind = TYPE_STRING;
+      t->type->kind = TYPE_STRING;
    } else if (name == "void") {
-      t->kind = TYPE_VOID;
+      t->type->kind = TYPE_VOID;
    } else if (name == "null") {
-      t->kind = TYPE_NULL;
+      t->type->kind = TYPE_NULL;
    } else if (name == "error") {
-      t->kind = TYPE_ERROR;
+      t->type->kind = TYPE_ERROR;
    } else {
       if (!name.empty() && name[0] == '*') {
-         t->kind = TYPE_REF;
+         t->type->kind = TYPE_REF;
          t->ref = createTypeByString(name.substr(1));
       } else {
-         t->kind = TYPE_NAME;
+         t->type->kind = TYPE_NAME;
          t->name = strdup(name.c_str());
       }
    }
@@ -842,15 +1054,15 @@ bool typesAreEquivalent(Type* lhs, Type* rhs) {
        return false;
    }
 
-   if (lhs->kind == TYPE_NULL || rhs->kind == TYPE_NULL) {
+   if (lhs->type->kind == TYPE_NULL || rhs->type->kind == TYPE_NULL) {
       return true;
    }
 
-   if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
+   if (primitiveTypesAreEquivalent(lhs->type->kind, rhs->type->kind)) {
       return true;
-   } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
+   } else if (lhs->type->kind == TYPE_REF && rhs->type->kind == TYPE_REF) {
       return typesAreEquals(lhs->ref, rhs->ref);
-   } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
+   } else if (lhs->type->kind == TYPE_NAME && rhs->type->kind == TYPE_NAME) {
       return strcmp(lhs->name, rhs->name) == 0;
    } else {
       return false;
@@ -860,13 +1072,13 @@ bool typesAreEquivalent(Type* lhs, Type* rhs) {
 bool attributionTypesAreEquivalent(Type* lhs, Type* rhs) {
    if (!lhs || !rhs) {
        return false;
-   } else if (rhs->kind == TYPE_NULL) {
+   } else if (rhs->type->kind == TYPE_NULL) {
       return true;
-   } else if (primitiveTypesAreEquivalent(lhs->kind, rhs->kind)) {
-      return  !(lhs->kind == TYPE_INT && rhs->kind == TYPE_FLOAT);
-   } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
+   } else if (primitiveTypesAreEquivalent(lhs->type->kind, rhs->type->kind)) {
+      return  !(lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_FLOAT);
+   } else if (lhs->type->kind == TYPE_REF && rhs->type->kind == TYPE_REF) {
       return typesAreEquals(lhs->ref, rhs->ref);
-   } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
+   } else if (lhs->type->kind == TYPE_NAME && rhs->type->kind == TYPE_NAME) {
       return strcmp(lhs->name, rhs->name) == 0;
    } else {
       return false;
@@ -876,13 +1088,13 @@ bool attributionTypesAreEquivalent(Type* lhs, Type* rhs) {
 bool typesAreEquals(Type* lhs, Type* rhs) {
    if (!lhs || !rhs) {
       return false;
-   } else if (lhs->kind == TYPE_REF && rhs->kind == TYPE_REF) {
+   } else if (lhs->type->kind == TYPE_REF && rhs->type->kind == TYPE_REF) {
       return typesAreEquals(lhs->ref, rhs->ref);
-   } else if (lhs->kind == TYPE_NAME && rhs->kind == TYPE_NAME) {
+   } else if (lhs->type->kind == TYPE_NAME && rhs->type->kind == TYPE_NAME) {
       return strcmp(lhs->name, rhs->name) == 0;
    }
    
-   return lhs->kind == rhs->kind;
+   return lhs->type->kind == rhs->type->kind;
 }
 
 TypeKind getPrimitiveTypeOfOperation(TypeKind lhs, TypeKind rhs) {
