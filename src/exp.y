@@ -26,6 +26,7 @@ extern CodeEmitter emitter;
    std::pair<std::string,Type*>* param; // std::pair é conhecido pelo include global
    std::vector<std::string>* enumfld;   // std::vector é conhecido pelo include global
    std::vector<std::pair<std::string,Type*>>* args; // std::vector e std::pair conhecidos
+   OpCode* opCode;
 }
 
 /// TOKENS
@@ -65,6 +66,7 @@ extern CodeEmitter emitter;
 %type <procedure> procedure_header
 
 %type <exp_res> literal bool_literal var ref_var deref_var exp call_stmt var_decl2 return_stmt2 return_stmt
+%type <opCode> rel_op
 
 
 %%
@@ -380,13 +382,16 @@ extern CodeEmitter emitter;
             $$ = ExpResult{ createPrimitiveType(TYPE_ERROR), ""};
          } else {
             std::string temp = new_temp();
+
+            OpCode opCode = $2;
             
-            emitter.emit(OpCode::TAC_COMP, temp, $1->address, $3->address);
+            emitter.emit(opCode, temp, $1->address, $3->address);
             $$ = new ExpResult();
             $$->type = createPrimitiveType(TYPE_BOOL);
             $$->address = temp; 
          }
          delete $1;
+         delete $2;
          delete $3;
       }
       | exp TOKEN_ADD exp {
@@ -520,8 +525,25 @@ extern CodeEmitter emitter;
          delete $2;
       }
       ;
-  rel_op:
-    TOKEN_GREATER | TOKEN_GREATER_EQUAL | TOKEN_LESS | TOKEN_LESS_EQUAL | TOKEN_DIFF | TOKEN_EQUAL
+   rel_op:
+      TOKEN_GREATER{
+         $$ = OpCode::TAC_GT;
+      } 
+      | TOKEN_GREATER_EQUAL{
+         $$ = OpCode::TAC_GE;
+      }
+      | TOKEN_LESS{
+         $$ = OpCode::TAC_LT;
+      } 
+      | TOKEN_LESS_EQUAL{
+         $$ = OpCode::TAC_LE;
+      } 
+      | TOKEN_DIFF{
+         $$ = OpCode::TAC_NEQ;
+      } 
+      | TOKEN_EQUAL{
+         $$ = OpCode::TAC_EQ;
+      }
     ;
 
    ref_var:
@@ -812,6 +834,7 @@ extern CodeEmitter emitter;
 
    return_stmt:
       TOKEN_RETURN return_stmt2 { 
+         $$ = $2;
          emitter.emit(OpCode::TAC_RETURN, $2->address);
          delete $2;
       }
@@ -825,6 +848,7 @@ extern CodeEmitter emitter;
         $$ = new ExpResult();
         $$->type = createPrimitiveType(TYPE_VOID);
         $$->address = ""; 
+
       }
       ;
 
@@ -832,9 +856,12 @@ extern CodeEmitter emitter;
       NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS {
          auto sym = symbolTable.lookup(std::string($1));
 
+         $$ = new ExpResult();
+         $$->address = "";
+
          if (!isProcedure(sym)) {
             yyerror(("Procedimento não declarado: " + std::string($1)).c_str());
-            $$ = createPrimitiveType(TYPE_ERROR);
+            $$->type = createPrimitiveType(TYPE_ERROR);
          } else {
             Procedure* proc = dynamic_cast<Procedure*>(sym);
             auto procedureTypes = proc->getParams();
@@ -843,26 +870,32 @@ extern CodeEmitter emitter;
             if ($3) {
                for (const auto& arg_pair : *$3) {
                   actualArgs.push_back(arg_pair.second);
+                  std::string temp = new_temp();
+                  emmiter.emit(OpCode::TAC_ATR, temp, arg_pair.second);
                }
+               std::string label_begin_function = new_label();
+               emmiter.emit(OpCode::TAC_GOTO, label_begin_function);
+               label_stack.push_back(label_begin_function);
+
                delete $3;
             }
 
             if (procedureTypes.size() != actualArgs.size()) {
                yyerror("Quantidade de parâmetros diferentes.");
-               $$ = createPrimitiveType(TYPE_ERROR);
+               $$_->type = createPrimitiveType(TYPE_ERROR);
             } else {
                bool error = false;
                for (size_t i = 0; i < procedureTypes.size(); i++) {
                   Type* expectedType = createTypeByString(procedureTypes[i]);
                   if (!attributionTypesAreEquivalent(expectedType, actualArgs[i])) {
                      yyerror(("Tipo do parâmetro incorreto: pos " + std::to_string(i)).c_str());
-                     $$ = createPrimitiveType(TYPE_ERROR);
+                     $$->type = createPrimitiveType(TYPE_ERROR);
                      error = true;
                   }
                   if (expectedType->name) free(expectedType->name);
                   delete expectedType;
                   if (!error) {
-                     $$ = createTypeByString(proc->getType());
+                     $$->type = createTypeByString(proc->getType());
                   }
                }
             }
