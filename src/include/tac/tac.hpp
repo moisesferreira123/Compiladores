@@ -6,6 +6,8 @@
 
 // Enum para todos os tipos de operação possíveis no nosso TAC.
 enum class OpCode {
+    TAC_ATR, // result = arg1
+
     // Operadores Aritméticos
     TAC_ADD,           // result = arg1 + arg2
     TAC_SUB,           // result = arg1 - arg2
@@ -20,7 +22,6 @@ enum class OpCode {
     TAC_GT,           // result = (arg1 >  arg2)
     TAC_LE,           // result = (arg1 <= arg2)  
     TAC_GE,           // result = (arg1 >= arg2)  
-    TAC_COMP,          // result = (arg1 COMP arg2)  
 
     TAC_OR,       // result = (arg1 > arg2)
     TAC_AND,      // result = (arg1 > arg2)
