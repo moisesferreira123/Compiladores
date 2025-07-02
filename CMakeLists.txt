@@ -70,8 +70,13 @@ add_library(lex_obj OBJECT ${LEX_C})
 
 # Corrigir includes
 target_include_directories(lex_obj PRIVATE ${HEADERS_DIR} ${INTERMEDIATE_DIR})
-target_include_directories(yacc_obj PRIVATE ${HEADERS_DIR} ${INTERMEDIATE_DIR})
 
+target_include_directories(yacc_obj PRIVATE 
+    ${HEADERS_DIR} 
+    ${INTERMEDIATE_DIR} 
+    ${HEADERS_DIR}/tac
+    ${HEADERS_DIR}/tac/codegen  # <== Corrigido aqui
+)
 # Compilar executável
 add_executable(exp
     $<TARGET_OBJECTS:symbol_table>

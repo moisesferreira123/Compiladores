@@ -13,7 +13,7 @@ std::string new_temp();
 // Gera um novo nome de rótulo (ex: "_L0", "_L1", "_L2", ...)
 std::string new_label();
 
-std::vector<std::string> label_stack;
+extern std::vector<std::string> label_stack;
 
 
 class CodeEmitter {

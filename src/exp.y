@@ -6,8 +6,7 @@
 extern int numLines;
 extern int numCols;
 extern SymbolTable symbolTable;
-extern CodeEmitter codeEmitter;
-extern
+extern CodeEmitter emitter;
 %}
 
 %code requires {
@@ -15,18 +14,18 @@ extern
 }
 
 %union {
-    int                              ival;
-    float                            fval;
-    char* nval;
-    char* sval;
-    Type* type; // Type* é conhecido pelo %code requires
-    ExpResult* exp_res;
-    Procedure* procedure; // Procedure* é conhecido pelo %code requires
-    Struct* stc;          // Struct* é conhecido pelo %code requires
-    Enum* enm;            // Enum* é conhecido pelo %code requires
-    std::pair<std::string,Type*>* param; // std::pair é conhecido pelo include global
-    std::vector<std::string>* enumfld;   // std::vector é conhecido pelo include global
-    std::vector<std::pair<std::string,Type*>>* args; // std::vector e std::pair conhecidos
+   int                              ival;
+   float                            fval;
+   char* nval;
+   char* sval;
+   Type* type; // Type* é conhecido pelo %code requires
+   ExpResult* exp_res;
+   Procedure* procedure; // Procedure* é conhecido pelo %code requires
+   Struct* stc;          // Struct* é conhecido pelo %code requires
+   Enum* enm;            // Enum* é conhecido pelo %code requires
+   std::pair<std::string,Type*>* param; // std::pair é conhecido pelo include global
+   std::vector<std::string>* enumfld;   // std::vector é conhecido pelo include global
+   std::vector<std::pair<std::string,Type*>>* args; // std::vector e std::pair conhecidos
 }
 
 /// TOKENS
@@ -679,7 +678,7 @@ extern
       | TOKEN_NULL {
          $$ = new ExpResult();
          $$->type = createPrimitiveType(TYPE_NULL);
-         $$->address = std::to_string($1); 
+         $$->address = "null"; 
       }
       ;
 
@@ -687,13 +686,13 @@ extern
       TOKEN_TRUE {
          $$ = new ExpResult();
          $$->type = createPrimitiveType(TYPE_BOOL);
-         $$->address = std::to_string($1);
+         $$->address = "true";
 
       }
       | TOKEN_FALSE {
          $$ = new ExpResult();
          $$->type = createPrimitiveType(TYPE_BOOL);
-         $$->address = std::to_string($1);
+         $$->address = "false";
       }
       ;
 
@@ -791,13 +790,13 @@ extern
          label_stack.push_back(label_begin);
 
       } exp {
-         if ($2->type->kind == TYPE_ERROR) {
+         if ($3->type->kind == TYPE_ERROR) {
             // Ignora
-         } else if ($2->type->kind != TYPE_BOOL) {
-            yyerror(("Tipo inválido para while: " + getType($2)).c_str());
+         } else if ($3->type->kind != TYPE_BOOL) {
+            yyerror(("Tipo inválido para while: " + getType($3)).c_str());
          } else{
             std::string label_end = new_label();
-            emitter.emit(OpCode::TAC_IF_FALSE_GOTO, label_end , $2->address);
+            emitter.emit(OpCode::TAC_IF_FALSE_GOTO, label_end , $3->address);
             label_stack.push_back(label_end);
          }
          delete $3;
