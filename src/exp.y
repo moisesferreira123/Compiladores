@@ -57,7 +57,7 @@ extern CodeEmitter emitter;
 %start program
 
 /// Associação dos não terminais aos tipos
-%type <type>  type return_type 
+%type <type>  type return_type stmt_list stmt stmt_list2   
 %type <param> paramfield_decl
 %type <args>  call_args call_args2 procedure_params procedure_params2 record_fields record_fields2
 %type <stc>   record_header
@@ -96,7 +96,7 @@ extern CodeEmitter emitter;
             std::string varKind = getType($4);
 
             if($5->type->kind != TYPE_NULL) {
-               emmiter.emit(OpCode::TAC_VAR, varName, $5->address, ""); 
+               emmiter.emit(OpCode::TAC_ATR, varName, $5->address, ""); 
             } 
 
             symbolTable.insert(std::make_unique<Variable>(varName, varKind));
@@ -113,7 +113,7 @@ extern CodeEmitter emitter;
             std::string varName = std::string($2);
             std::string varKind = getType($4);
 
-            emmiter.emit(OpCode::TAC_VAR, varName, $4->address, "");
+            emmiter.emit(OpCode::TAC_ATR, varName, $4->address, "");
 
             symbolTable.insert(std::make_unique<Variable>(varName, varKind));
             free($2);
@@ -124,10 +124,15 @@ extern CodeEmitter emitter;
 
    var_decl2:
       TOKEN_ATTRIBUTION exp {
-         $$ = $2;
+         $$ = new ExpResult();
+         $$->type = $2->type;
+         $$->address = $2->address;
+         delete $2;
       }
       | {
+         $$ = new ExpResult();
          $$->type = createPrimitiveType(TYPE_NULL);
+         $$->address = "<nullptr>";
       }
       ;
 
@@ -141,11 +146,19 @@ extern CodeEmitter emitter;
          }
          $1->setParams(paramTypes);
          $1->setType(getType($5));
+
       } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
-         /// TODO: Definir um tipo para stmt_list e verificar se é igual ao return_type:
-            /// stmt_list tem um tipo definido por seus stmt
-            /// stmt tem seu tipo definido por return_stmt
-            /// Caso não seja definido tipo, é void
+         if (!typesAreEquivalent($9, $1->getType())) {
+            yyerror(("Tipo de retorno incompatível: esperado " + getType($1->getType()) +
+                     ", mas retornado " + getType($9)).c_str());
+         }
+
+         std::string endLabel = procedure_context_stack.back();
+         procedure_context_stack.pop_back();
+
+         emitter.emit(OpCode::TAC_LABEL, endLabel);
+         emitter.emit(OpCode::TAC_RETURN, "");
+
          symbolTable.exitScope();
          symbolTable.insert(std::unique_ptr<Procedure>($1));
       }
@@ -153,11 +166,51 @@ extern CodeEmitter emitter;
 
    procedure_header:
     TOKEN_PROCEDURE NAME {
-        $$ = new Procedure(std::string($2));
+        std::string procName = std::string($2);
+        $$ = new Procedure(procName);
+
+        std::string beginLabel = procName + "_begin";
+        std::string endLabel = procName + "_end";
+
+        procedure_context_stack.push_back(endLabel);
+        emitter.emit(OpCode::TAC_LABEL, beginLabel);
+
         symbolTable.enterScope();
         free($2);
     };
 
+
+   procedure_params:
+      paramfield_decl procedure_params2 {
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+         $$->push_back(*$1);
+         if ($2) {
+            $$->insert($$->end(), $2->begin(), $2->end());
+            delete $2;
+         }
+         delete $1;
+      }
+      | {
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+      }
+      ;
+
+
+   procedure_params2:
+      TOKEN_COMMA paramfield_decl procedure_params2 {
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+         $$->push_back(*$2);
+         if ($3) {
+            $$->insert($$->end(), $3->begin(), $3->end());
+            delete $3;
+         }
+         delete $2;
+      }
+      | {
+         $$ = new std::vector<std::pair<std::string, Type*>>();
+      }
+      ;
+      
    record_decl:
       record_header TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES {
          std::unordered_map<std::string, std::string> fields;
@@ -179,21 +232,6 @@ extern CodeEmitter emitter;
          free($2);
       }
 
-   procedure_params:
-      paramfield_decl procedure_params2 {
-         $$ = new std::vector<std::pair<std::string, Type*>>();
-         $$->push_back(*$1);
-         if ($2) {
-            $$->insert($$->end(), $2->begin(), $2->end());
-            delete $2;
-         }
-         delete $1;
-      }
-      | {
-         $$ = new std::vector<std::pair<std::string, Type*>>();
-      }
-      ;
-
    record_fields:
       paramfield_decl record_fields2 {
          $$ = new std::vector<std::pair<std::string, Type*>>();
@@ -203,21 +241,6 @@ extern CodeEmitter emitter;
             delete $2;
          }
          delete $1;
-      }
-      | {
-         $$ = new std::vector<std::pair<std::string, Type*>>();
-      }
-      ;
-
-   procedure_params2:
-      TOKEN_COMMA paramfield_decl procedure_params2 {
-         $$ = new std::vector<std::pair<std::string, Type*>>();
-         $$->push_back(*$2);
-         if ($3) {
-            $$->insert($$->end(), $3->begin(), $3->end());
-            delete $3;
-         }
-         delete $2;
       }
       | {
          $$ = new std::vector<std::pair<std::string, Type*>>();
@@ -245,7 +268,7 @@ extern CodeEmitter emitter;
       }
       | {
          $$ = new Type;
-         $$->type->kind = TYPE_VOID;
+         $$->kind = TYPE_VOID;
          $$->name = nullptr;
          $$->ref = nullptr;
       }
@@ -316,13 +339,28 @@ extern CodeEmitter emitter;
       ;
 
    stmt_list:
-      stmt stmt_list2
-      |
+      stmt stmt_list2{
+         if ($2->kind != TYPE_VOID)
+            $$ = $2;
+         else
+            $$ = $1;
+      }
+
+      | {
+         $$ = createPrimitiveType(TYPE_VOID);
+      }
       ;
 
    stmt_list2:
-      TOKEN_SEMICOLON stmt stmt_list2
-      |
+      TOKEN_SEMICOLON stmt stmt_list2{
+         if ($3->kind != TYPE_VOID)
+            $$ = $3;
+         else
+            $$ = $2;
+      }
+      | {
+         $$ = createPrimitiveType(TYPE_VOID);
+      }
       ;
 
    exp:
@@ -719,12 +757,23 @@ extern CodeEmitter emitter;
       ;
 
    stmt:
-      assign_stmt
-      | if_stmt
-      | while_stmt
-      | return_stmt
-      | call_stmt
-      ;
+      assign_stmt {
+         $$ = createPrimitiveType(TYPE_VOID);
+      }
+      | if_stmt {
+         $$ = createPrimitiveType(TYPE_VOID);
+      }
+      | while_stmt {
+         $$ = createPrimitiveType(TYPE_VOID);
+      }
+      | return_stmt {
+         $$ = new Type();
+         $$->kind = $1->type->kind;
+      }
+      | call_stmt {
+         $$ = $1->type;
+      }
+   ;
 
    assign_stmt:
       var TOKEN_ATTRIBUTION exp {
@@ -842,7 +891,9 @@ extern CodeEmitter emitter;
 
    return_stmt2:
       exp {
-         $$ = $1;
+         $$ = new ExpResult();
+         $$->type = $1->type;
+         $$->address = $1->address;  
       }
       | {
         $$ = new ExpResult();
