@@ -7,6 +7,7 @@
 
 CodeEmitter emitter;
 std::vector<std::string> label_stack;
+std::vector<std::string> procedure_context_stack;
 
 static int count_temp = 0;
 static int count_label = 0;

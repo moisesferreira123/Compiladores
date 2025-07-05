@@ -15,6 +15,9 @@ std::string new_label();
 
 extern std::vector<std::string> label_stack;
 
+// Nova pilha para o contexto do procedimento
+extern std::vector<std::string> procedure_context_stack;
+
 
 class CodeEmitter {
 private:
