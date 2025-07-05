@@ -150,6 +150,10 @@ class SymbolTable {
       }
       return current->lookup(name);
    }
+
+   std::string getSymbolCategorizedInfo(std::string const& name) {
+      
+   }
 };
 
 #endif /// SYMBOL_TABLE_HPP
