@@ -204,6 +204,16 @@ class SymbolTable {
 
       return current->lookup(name);
    }
+
+   void reset() {
+      while (current != nullptr) {
+         Node* temp = current->getParent();
+         delete current;
+         current = temp;
+      }
+      current = new Node(nullptr);
+      scopes = 1;
+   }
 };
 
 #endif /// SYMBOL_TABLE_HPP

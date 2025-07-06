@@ -10,6 +10,7 @@
 // protótipo gerado pelo Bison/Flex
 int yyparse();
 extern FILE* yyin;
+extern SymbolTable symbolTable;
 
 struct TestCase {
    std::string path;
@@ -17,7 +18,9 @@ struct TestCase {
 };
 
 static const std::vector<TestCase> ALL_TESTS = {
-   { "tests/program.c25", true },
+   {        "tests/files/swap.c25", true },
+   {      "tests/files/person.c25", true },
+   { "tests/files/day_of_week.c25", true },
    // adicione outros testes aqui
 };
 
@@ -116,6 +119,7 @@ int main(int argc, char* argv[]) {
    int failedCount = 0;
 
    for (auto& tc : tests) {
+      symbolTable.reset();
       ++total;
       Logger::info("Rodando teste: " + tc.path);
       // abre arquivo de entrada para lexer

@@ -74,6 +74,9 @@ bool isAssignable(Type* to, Type* from) {
       return isEqualType(to->ref, from->ref); // Ambos são referencias
    } else if (isSpecialKind(to->kind) && isSpecialKind(from->kind)) {
       return to->structured == from->structured; // Ambos eram estruturais
+   } else if (to->kind == TYPE_ENUM) {
+      return from->kind == TYPE_INT
+        || (from->kind == TYPE_ENUM && to->structured == from->structured);
    } else {
       return false;
    }
@@ -297,6 +300,8 @@ Type* processVar(char* name) {
       return createTypeError();
    } else if (auto var = std::dynamic_pointer_cast<Variable>(symbol)) {
       return createType(var->getType());
+   } else if (auto enumerate = std::dynamic_pointer_cast<Enum>(symbol)) {
+      return createType(TYPE_ENUM, symbol);
    } else {
       expectedVariableError(name);
       return createTypeError();

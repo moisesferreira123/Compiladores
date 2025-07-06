@@ -57,6 +57,12 @@
 %type <names_list> enum_field
 %type <types_list> call_args call_args2
 
+/// TODO: Tipos estruturados tem regras especiais:
+/// 1. Em var: exp . NAME, exp pode ser o NAME de uma Enumeração (não variável) e o NAME um campo dentro da Enumeração
+///   o exp não pode ser uma variável do tipo daquela enumeração.
+/// 2. Na mesma regra, para um Struct, o exp deverá ser uma variável e não pode ser o Struct mesmo.
+///   É necessário uma maneira de diferenciar os types de quem é uma variável do tipo X e do tipo X.
+
 /// Regra inicial
 %start program
 
@@ -126,7 +132,7 @@
       | {
          $$ = createTypeNull();
       }
-   /// TODO: Verificar declarações (erros não estão passando corretamente)
+
    procedure_decl:
       TOKEN_PROCEDURE NAME {
          symbolTable.enterScope();
