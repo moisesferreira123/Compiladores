@@ -19,10 +19,11 @@ begin
       if x = y then
         x := -x + y
       else 
-        x := x^y;
+        x := x/y;
         x := x*y
       fi;
-      xr := ref(x); yr := ref(y);
-      swap(x,yr)
+      xr := ref(x);
+      yr := ref(y);
+      swap(xr,yr)
     end
 end

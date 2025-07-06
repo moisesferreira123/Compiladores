@@ -1,10 +1,9 @@
-#include <cstdio>
+#include <iostream>
+#include "utils.hpp"
 
 extern int yyparse();
+extern bool program_ok;
 
 int main() {
-    printf("Starting parser...\n");
-    int result = yyparse();
-    printf("Parsing finished with code %d\n", result);
-    return result;
+   return yyparse() && program_ok;
 }

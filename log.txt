@@ -1,0 +1,2 @@
+[34m[Sun Jul  6 08:53:29 2025] [INFO] Nenhum erro encontrado. Gerando código de máquina.[0m
+[32m[Sun Jul  6 08:53:29 2025] [SUCCESS] Análise sintática concluída com sucesso: estrutura do programa válida.[0m

@@ -2,12 +2,11 @@
 #define SYMBOL_TABLE_HPP
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <memory> // Para std::unique_ptr
 
-// Estrutura que armazena informações sobre um símbolo
 class Symbol {
    private:
    std::string name;
@@ -15,19 +14,39 @@ class Symbol {
    public:
    Symbol(std::string name) : name(name) { }
    std::string getName() const { return name; }
-   virtual ~Symbol() {}
+   virtual ~Symbol() { }
 };
 
-class Variable : public Symbol {
+class VariableType {
+   public:
+   virtual ~VariableType() { }
+};
+
+class PrimitiveType : public VariableType {
    private:
-   std::string kind;
+   std::string type;
 
    public:
-   Variable(std::string name, std::string kind)
-       : Symbol(name), kind(kind) { }
+   PrimitiveType(std::string type) : type(type) { }
+   std::string getType() const { return type; }
+};
 
-   std::string getKind() const { return kind; }
-   void setKind(std::string kind) { this->kind = kind; }
+class StructuredType : public VariableType {
+   private:
+   std::shared_ptr<Symbol> type;
+
+   public:
+   StructuredType(std::shared_ptr<Symbol> type) : type(type) { }
+   std::shared_ptr<Symbol> getType() const { return type; }
+};
+
+class ReferenceType : public VariableType {
+   private:
+   VariableType* type;
+
+   public:
+   ReferenceType(VariableType* type) : type(type) { }
+   VariableType* getType() const { return type; }
 };
 
 class Program : public Symbol {
@@ -35,37 +54,50 @@ class Program : public Symbol {
    Program(std::string name) : Symbol(name) { }
 };
 
+class Variable : public Symbol {
+   private:
+   VariableType* type;
+
+   public:
+   Variable(std::string name, VariableType* type) : Symbol(name), type(type) { }
+
+   VariableType* getType() const { return type; }
+   void setType(VariableType* const& type) { this->type = type; }
+};
+
 class Procedure : public Symbol {
    private:
-   std::string type;
-   std::vector<std::string> params;
+   VariableType* type;
+   std::vector<std::shared_ptr<Variable>> params;
 
    public:
    Procedure(std::string name) : Symbol(name) { }
+   Procedure(std::string name, VariableType* type,
+     std::vector<std::shared_ptr<Variable>> params)
+       : Symbol(name), type(type), params(params) { }
 
-   std::string getType() const { return type; }
-   std::vector<std::string> getParams() const { return params; }
+   VariableType* getType() const { return type; }
+   std::vector<std::shared_ptr<Variable>> getParams() const { return params; }
 
-   void setType(std::string type) { this->type = type; }
-   void setParams(std::vector<std::string> params) { this->params = params; }
-
-   void addParam(std::string param) { params.push_back(param); }
+   void setType(VariableType* type) { this->type = type; }
+   void setParams(std::vector<std::shared_ptr<Variable>> const& params) {
+      this->params = params;
+   }
 };
 
 class Struct : public Symbol {
    private:
-   std::unordered_map<std::string, std::string> fields;
+   std::vector<std::shared_ptr<Variable>> fields;
 
    public:
    Struct(std::string name) : Symbol(name) { }
+   Struct(std::string name, std::vector<std::shared_ptr<Variable>> fields)
+       : Symbol(name), fields(fields) { }
 
-   std::unordered_map<std::string, std::string> getFields() const {
-      return fields;
-   }
-   void setFields(std::unordered_map<std::string, std::string> fields) {
+   std::vector<std::shared_ptr<Variable>> getFields() const { return fields; }
+   void setFields(std::vector<std::shared_ptr<Variable>> const& fields) {
       this->fields = fields;
    }
-   void addField(std::string name, std::string type) { fields[name] = type; }
 };
 
 class Enum : public Symbol {
@@ -73,81 +105,103 @@ class Enum : public Symbol {
    std::vector<std::string> values;
 
    public:
-   // Modificado o construtor para receber values por cópia ou referência constante
    Enum(std::string name, std::vector<std::string> values = {})
        : Symbol(name), values(values) { }
 
-   void setValues(const std::vector<std::string>& values) {
-        this->values = values;
-    }
+   void setValues(std::vector<std::string> const& values) {
+      this->values = values;
+   }
    std::vector<std::string> getValues() const { return values; }
-   void addValue(std::string value) { values.push_back(value); }
 };
 
 // Nó da Árvore de escopos
 class Node {
    private:
-   // Alterado para armazenar unique_ptr para evitar slicing
-   std::unordered_map<std::string, std::unique_ptr<Symbol>> table;
-   Node* father;
+   std::unordered_map<std::string, std::shared_ptr<Symbol>> table;
+   Node* parent;
 
    public:
-   Node(Node* father) : father(father) { }
+   Node(Node* parent) : parent(parent) { }
+   ~Node() { }
 
-   // Destrutor para garantir que os ponteiros únicos sejam liberados
-   ~Node() {}
-
-   // Insere um smart pointer (unique_ptr)
-   void insert(std::unique_ptr<Symbol> symbol) {
-      table.insert({ symbol->getName(), std::move(symbol) });
+   void insert(std::shared_ptr<Symbol> symbol) {
+      table.insert({ symbol->getName(), symbol });
    }
 
-   // Lookup retorna um ponteiro bruto, pois o ownership ainda está no mapa
-   Symbol* lookup(std::string const& name) {
+   std::shared_ptr<Symbol> single_lookup(std::string const& name) {
       auto it = table.find(name);
       if (it != table.end()) {
-         return it->second.get(); // Retorna o ponteiro bruto do unique_ptr
-      }
-      if (father != nullptr) {
-         return father->lookup(name);
+         return it->second;
       }
       return nullptr;
    }
-   Node* getFather() { return father; }
+
+   std::shared_ptr<Symbol> lookup(std::string const& name) {
+      std::shared_ptr<Symbol> symbol = single_lookup(name);
+      if (symbol != nullptr) {
+         return symbol;
+      } else if (parent != nullptr) {
+         return parent->lookup(name);
+      }
+
+      return nullptr;
+   }
+
+   Node* getParent() { return parent; }
 };
 
-// Tabela de símbolos
 class SymbolTable {
    private:
    Node* current;
+   int scopes;
 
    public:
-   SymbolTable() : current(new Node(nullptr)) { }
-   
-   // Destrutor para liberar a memória dos nós da árvore
+   SymbolTable() : current(new Node(nullptr)), scopes(1) { }
+
    ~SymbolTable() {
-        while (current != nullptr) {
-            Node* temp = current->getFather();
-            delete current;
-            current = temp;
-        }
+      while (current != nullptr) {
+         Node* temp = current->getParent();
+         delete current;
+         current = temp;
+      }
    }
 
-   // Insert agora aceita um smart pointer (unique_ptr)
-   void insert(std::unique_ptr<Symbol> symbol) { current->insert(std::move(symbol)); }
+   void insert(std::shared_ptr<Symbol> symbol) {
+      if (current == nullptr) {
+         return;
+      }
 
-   void enterScope() { current = new Node(current); }
+      current->insert(symbol);
+   }
+
+   void enterScope() {
+      current = new Node(current);
+      scopes++;
+   }
 
    void exitScope() {
-      Node* tmp = current->getFather();
-      delete current; // Node delete will free its unique_ptrs
+      if (current == nullptr) {
+         return;
+      }
+
+      Node* tmp = current->getParent();
+      delete current;
       current = tmp;
    }
 
-   Symbol* lookup(std::string const& name) {
+   std::shared_ptr<Symbol> single_lookup(std::string const& name) {
       if (current == nullptr) {
          return nullptr;
       }
+
+      return current->single_lookup(name);
+   }
+
+   std::shared_ptr<Symbol> lookup(std::string const& name) {
+      if (current == nullptr) {
+         return nullptr;
+      }
+
       return current->lookup(name);
    }
 };
