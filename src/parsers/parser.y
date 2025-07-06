@@ -415,7 +415,32 @@
          $$ = processExp("not", $2);
          delete $2;
       }
-      | exp rel_op exp {
+      | exp TOKEN_EQUAL exp {
+         $$ = processExp($1, "rel", $3);
+         delete $1;
+         delete $3;
+      }
+      | exp TOKEN_DIFF exp {
+         $$ = processExp($1, "rel", $3);
+         delete $1;
+         delete $3;
+      }
+      | exp TOKEN_LESS exp {
+         $$ = processExp($1, "rel", $3);
+         delete $1;
+         delete $3;
+      }
+      | exp TOKEN_LESS_EQUAL exp {
+         $$ = processExp($1, "rel", $3);
+         delete $1;
+         delete $3;
+      }
+      | exp TOKEN_GREATER exp {
+         $$ = processExp($1, "rel", $3);
+         delete $1;
+         delete $3;
+      }
+      | exp TOKEN_GREATER_EQUAL exp {
          $$ = processExp($1, "rel", $3);
          delete $1;
          delete $3;
@@ -472,17 +497,6 @@
          delete $2;
       }
       ;
-
-   rel_op:
-      TOKEN_GREATER 
-      | TOKEN_GREATER_EQUAL 
-      | TOKEN_LESS 
-      | TOKEN_LESS_EQUAL 
-      | TOKEN_DIFF 
-      | TOKEN_EQUAL
-      ;
-
-   /// Já finalizado
 
    literal:
       INT_LITERAL {
