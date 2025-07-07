@@ -18,10 +18,11 @@ begin
    procedure main()
    begin
       var day: dayOfWeek;
+      var day2: dayOfWeek := dayOfWeek.MONDAY;
       var x := 6
    in
       while x >= 0 && x <= 4 do
-         dayOfWeek.MONDAY := dayOfWeek.MONDAY;
+         day := day2;
          if x = 3 then
             x := x * 2
          else
