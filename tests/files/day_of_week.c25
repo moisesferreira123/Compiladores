@@ -21,7 +21,7 @@ begin
       var x := 6
    in
       while x >= 0 && x <= 4 do
-         day := SEGUNDA;
+         dayOfWeek.MONDAY := dayOfWeek.MONDAY;
          if x = 3 then
             x := x * 2
          else

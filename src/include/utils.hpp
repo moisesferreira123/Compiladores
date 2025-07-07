@@ -24,6 +24,7 @@ enum TypeKind {
    TYPE_NULL,
    TYPE_REF,
    TYPE_STRUCT,
+   TYPE_ENUM_VALUE,
    TYPE_ENUM,
    TYPE_ERROR
 };
@@ -52,6 +53,7 @@ bool isNullKind(TypeKind kind);
 bool isPrimitiveKind(TypeKind kind);
 bool isSpecialKind(TypeKind kind);
 bool isReferenceKind(TypeKind kind);
+bool isEnumValueKind(TypeKind kind);
 bool isAssignable(Type* to, Type* from);
 bool isEqualType(Type* first, Type* second);
 bool isSubjectToExpansion(TypeKind to, TypeKind from);

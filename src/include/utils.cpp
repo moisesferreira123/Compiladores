@@ -34,10 +34,14 @@ bool isSpecialKind(TypeKind kind) {
 
 bool isReferenceKind(TypeKind kind) { return kind == TYPE_REF; }
 
+bool isEnumValueKind(TypeKind kind) { return kind == TYPE_ENUM_VALUE; }
+
 bool isSubjectToExpansion(TypeKind to, TypeKind from) {
    if (to == TYPE_FLOAT && from == TYPE_INT) {
       return true;
    } else if (to == TYPE_INT && from == TYPE_BOOL) {
+      return true;
+   } else if (to == TYPE_INT && from == TYPE_ENUM_VALUE) {
       return true;
    }
 
@@ -50,6 +54,8 @@ bool isEqualType(Type* first, Type* second) {
    } else if (isReferenceKind(first->kind) && isReferenceKind(second->kind)) {
       return isEqualType(first->ref, second->ref);
    } else if (isSpecialKind(first->kind) && isSpecialKind(second->kind)) {
+      return first->structured == second->structured;
+   } else if (isEnumValueKind(first->kind) && isEnumValueKind(second->kind)) {
       return first->structured == second->structured;
    } else {
       return false;
@@ -74,9 +80,10 @@ bool isAssignable(Type* to, Type* from) {
       return isEqualType(to->ref, from->ref); // Ambos são referencias
    } else if (isSpecialKind(to->kind) && isSpecialKind(from->kind)) {
       return to->structured == from->structured; // Ambos eram estruturais
-   } else if (to->kind == TYPE_ENUM) {
+   } else if (isEnumValueKind(to->kind)) {
       return from->kind == TYPE_INT
-        || (from->kind == TYPE_ENUM && to->structured == from->structured);
+        || (from->kind == TYPE_ENUM_VALUE
+          && to->structured == from->structured);
    } else {
       return false;
    }
@@ -92,9 +99,12 @@ Type* getExpandedType(Type* first, Type* second) {
         || (first->kind == TYPE_BOOL && second->kind == TYPE_INT)) {
          /// Int + Bool = Int
          return createType(TYPE_INT);
-      } else if (first->kind == second->kind) {
+      } else if (isEqualType(first, second)) {
          /// Os tipos eram iguais
          return new Type(*first);
+      } else if ((isEnumValueKind(first->kind) && second->kind == TYPE_INT)
+        || (isEnumValueKind(second->kind) && first->kind == TYPE_INT)) {
+         return createType(TYPE_INT);
       } else {
          return createTypeError();
       }
@@ -330,7 +340,7 @@ Type* processVar(Type* exp, char* name) {
          if (auto enumerate = std::dynamic_pointer_cast<Enum>(structured)) {
             for (std::string value : enumerate->getValues()) {
                if (value == name) {
-                  return createType(TYPE_INT);
+                  return createType(TYPE_ENUM_VALUE, structured);
                }
             }
 
@@ -486,6 +496,13 @@ Type* processExp(Type* exp1, std::string op, Type* exp2) {
             operationNotValidError(exp1, op, exp2);
             return createTypeError();
          }
+      } else if (isEnumValueKind(exp1->kind) || isEnumValueKind(exp2->kind)) {
+         if (isAssignable(exp1, exp2) || isAssignable(exp2, exp1)) {
+            return createType(TYPE_BOOL);
+         } else {
+            operationNotValidError(exp1, op, exp2);
+            return createTypeError();
+         }
       } else {
          operationNotValidError(exp1, op, exp2);
          return createTypeError();
@@ -618,6 +635,8 @@ Type* createType(TypeKind kind) {
 Type* createType(TypeKind kind, std::shared_ptr<Symbol> symbol) {
    if (isSpecialKind(kind) && symbol) {
       return new Type { kind, symbol, nullptr };
+   } else if (isEnumValueKind(kind) && symbol) {
+      return new Type { kind, symbol, nullptr };
    }
 
    return createTypeError();
@@ -655,7 +674,7 @@ Type* createType(VariableType* varType) {
       if (dynamic_cast<Struct*>(type.get())) {
          return createType(TYPE_STRUCT, type);
       } else if (dynamic_cast<Enum*>(type.get())) {
-         return createType(TYPE_ENUM, type);
+         return createType(TYPE_ENUM_VALUE, type);
       } else {
          return createTypeError();
       }
@@ -700,8 +719,9 @@ std::string getTypeStr(Type* type) {
       return "null";
    } else if (type->kind == TYPE_REF) {
       return "*" + getTypeStr(type->ref);
-   } else if (type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM) {
-      return type->structured->getName() + "["
+   } else if (type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM
+     || type->kind == TYPE_ENUM_VALUE) {
+      return "sym[" + type->structured->getName() + "["
         + std::to_string(
           reinterpret_cast<std::uintptr_t>(type->structured.get()))
         + "]";
