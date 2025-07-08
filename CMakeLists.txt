@@ -14,23 +14,29 @@ set(INTERMEDIATE_DIR ${BUILD_DIR}/intermediate)
 set(SYMBOL_TABLE ${HEADERS_DIR}/symbol_table.cpp)
 set(LOGGER ${HEADERS_DIR}/logger.cpp)
 set(UTILS ${HEADERS_DIR}/utils.cpp)
+set(CODEGEN ${HEADERS_DIR}/tac/codegen.cpp)
 set(MAIN ${SRC_DIR}/main.cpp)
 set(TESTS tests/run_tests.cpp)
 set(LEX ${PARSERS_DIR}/lexer.lex)
 set(YACC ${PARSERS_DIR}/parser.y)
-set(HEADERS ${HEADERS_DIR}/symbol_table.hpp
-   ${HEADERS_DIR}/utils.hpp
-   ${HEADERS_DIR}/logger.hpp)
+set(HEADERS
+    ${HEADERS_DIR}/symbol_table.hpp
+    ${HEADERS_DIR}/utils.hpp
+    ${HEADERS_DIR}/logger.hpp
+    ${HEADERS_DIR}/tac/tac.hpp
+    ${HEADERS_DIR}/tac/codegen.hpp
+)
 
 # Arquivos gerados
 set(LEX_C ${INTERMEDIATE_DIR}/lex.yy.c)
 set(YACC_C ${INTERMEDIATE_DIR}/exp.tab.c)
 set(YACC_H ${INTERMEDIATE_DIR}/exp.tab.h)
 
-# Comandos para gerar os arquivos com bison e flex
+# Encontrar Bison e Flex
 find_program(BISON_EXECUTABLE bison REQUIRED)
 find_program(FLEX_EXECUTABLE flex REQUIRED)
 
+# Comandos para gerar arquivos com Bison e Flex
 add_custom_command(
     OUTPUT ${YACC_C} ${YACC_H}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${INTERMEDIATE_DIR}
@@ -47,43 +53,41 @@ add_custom_command(
     COMMENT "Running Flex"
 )
 
-
-# Forçar CMake a compilar os arquivos gerados como C++
+# Forçar arquivos gerados serem compilados como C++
 set_source_files_properties(${LEX_C} PROPERTIES LANGUAGE CXX)
 set_source_files_properties(${YACC_C} PROPERTIES LANGUAGE CXX)
 
-# Adicionar biblioteca para symbol_table
+# Criar bibliotecas objetos para cada grupo de fontes
 add_library(symbol_table OBJECT ${SYMBOL_TABLE})
 target_include_directories(symbol_table PUBLIC ${SRC_DIR})
 
-# Adicionar biblioteca para logger
 add_library(logger OBJECT ${LOGGER})
 target_include_directories(logger PUBLIC ${SRC_DIR})
 
-# Adicionar biblioteca para utils
 add_library(utils OBJECT ${UTILS})
 target_include_directories(utils PUBLIC ${SRC_DIR})
 
-# Adicionar biblioteca para main
+add_library(tac_codegen OBJECT ${CODEGEN})
+target_include_directories(tac_codegen PUBLIC ${SRC_DIR})
+
 add_library(main_obj OBJECT ${MAIN})
 target_include_directories(main_obj PUBLIC ${HEADERS_DIR})
 
 add_library(test_obj OBJECT ${TESTS})
 target_include_directories(test_obj PUBLIC ${HEADERS_DIR})
 
-# Compilar arquivos gerados
 add_library(yacc_obj OBJECT ${YACC_C})
 add_library(lex_obj OBJECT ${LEX_C})
 
-# Corrigir includes
 target_include_directories(lex_obj PRIVATE ${HEADERS_DIR} ${INTERMEDIATE_DIR})
 target_include_directories(yacc_obj PRIVATE ${HEADERS_DIR} ${INTERMEDIATE_DIR})
 
-# Compilar executável principal
+# Executável principal
 add_executable(compiler
     $<TARGET_OBJECTS:symbol_table>
     $<TARGET_OBJECTS:logger>
     $<TARGET_OBJECTS:utils>
+    $<TARGET_OBJECTS:tac_codegen>
     $<TARGET_OBJECTS:main_obj>
     $<TARGET_OBJECTS:lex_obj>
     $<TARGET_OBJECTS:yacc_obj>
@@ -92,12 +96,13 @@ add_executable(compiler
 target_include_directories(compiler PRIVATE ${SRC_DIR} ${INTERMEDIATE_DIR})
 target_link_libraries(compiler fl)
 
-# Executável run_tests
+# Executável para testes
 add_executable(run_tests
     $<TARGET_OBJECTS:test_obj>
     $<TARGET_OBJECTS:symbol_table>
     $<TARGET_OBJECTS:logger>
     $<TARGET_OBJECTS:utils>
+    $<TARGET_OBJECTS:tac_codegen>
     $<TARGET_OBJECTS:lex_obj>
     $<TARGET_OBJECTS:yacc_obj>
 )
@@ -105,6 +110,6 @@ add_executable(run_tests
 target_include_directories(run_tests PRIVATE ${SRC_DIR} ${INTERMEDIATE_DIR} tests)
 target_link_libraries(run_tests fl)
 
-# Colocar executáveis na pasta build
+# Definir pasta de saída dos executáveis
 set_target_properties(compiler PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BUILD_DIR})
 set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BUILD_DIR})

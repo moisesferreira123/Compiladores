@@ -1,5 +1,7 @@
 %{
    #include "symbol_table.hpp"
+   #include "tac/codegen.hpp"
+   #include "tac/tac.hpp"
 %}
 
 %code requires {
@@ -13,6 +15,7 @@
    char* string_value;
    bool ok;
    Type* type;
+   TacOperand* tac_operand; // Antigo ExpResult
    Paramfield* paramfield;
    std::vector<Paramfield*>* paramfield_list;
    std::vector<Type*>* types_list;
@@ -48,14 +51,16 @@
 %type <ok> program decl_block decl_block2 decl  
 %type <ok> var_decl procedure_decl record_decl enum_decl
 %type <ok> scope_declarations assign_stmt
-%type <type> type var_decl2 exp literal stmt stmt_list stmt_list2
-%type <type> return_type return_stmt return_stmt2 var deref_var
-%type <type> call_stmt if_stmt if_stmt2 while_stmt ref_var
+%type <type> type var_decl2 stmt stmt_list stmt_list2
+%type <type> return_type return_stmt return_stmt2 
+%type <type> call_stmt if_stmt if_stmt2 while_stmt 
 %type <paramfield> paramfield_decl
 %type <paramfield_list> procedure_params procedure_params2 
 %type <paramfield_list> record_fields record_fields2
 %type <names_list> enum_field
 %type <types_list> call_args call_args2
+
+%type <tac_operand> exp literal var ref_var deref_var 
 
 /// TODO: Tipos estruturados tem regras especiais:
 /// 1. Em var: exp . NAME, exp pode ser o NAME de uma Enumeração (não variável) e o NAME um campo dentro da Enumeração
@@ -119,7 +124,7 @@
          delete $5;
       }
       | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
-         $$ = processVarDecl($4, $2);
+         $$ = processVarDecl($4->type, $2);
          delete $2;
          delete $4;
       }
@@ -127,7 +132,7 @@
    
    var_decl2: 
       TOKEN_ATTRIBUTION exp {
-         $$ = $2;
+         $$ = $2->type;
       }
       | {
          $$ = createTypeNull();
@@ -294,12 +299,24 @@
 
    assign_stmt:
       var TOKEN_ATTRIBUTION exp {
-         $$ = processAssignStmt($1, $3);
-         delete $1;
-         delete $3;
+         bool ok = processAssignStmt($1->type, $3->type);
+         
+         if(ok){
+            emitter.emit(OpCode::TAC_ASSIGN, $1->loc, $3->loc);
+            delete $1;
+            delete $3;
+         }
+
+         $$ = ok;
       }
       | deref_var TOKEN_ATTRIBUTION exp {
-         $$ = processAssignStmt($1, $3);
+         bool ok = processAssignStmt($1->type, $3->type);
+
+         if(ok){
+            emitter.emit(OpCode::TAC_DEREF_ASSIGN, "", $1->loc, $3->loc);
+         }
+
+         $$ = ok;
          delete $1;
          delete $3;
       }
@@ -307,7 +324,7 @@
    
    if_stmt:
       TOKEN_IF exp TOKEN_THEN stmt_list if_stmt2 TOKEN_FI {
-         $$ = processIfStmt($2, $4, $5);
+         $$ = processIfStmt($2->type, $4, $5);
          delete $2;
          delete $4;
          delete $5;
@@ -325,7 +342,7 @@
 
    while_stmt:
       TOKEN_WHILE exp TOKEN_DO stmt_list TOKEN_OD {
-         $$ = processWhileStmt($2, $4);
+         $$ = processWhileStmt($2->type, $4);
          delete $2;
          delete $4;
       }
@@ -345,7 +362,7 @@
    
    call_args: 
       exp call_args2 {
-         $$ = processCallArgs($1, $2);
+         $$ = processCallArgs($1->type, $2);
       }
       | {
          $$ = new std::vector<Type*>();
@@ -354,7 +371,7 @@
    
    call_args2:
       TOKEN_COMMA exp call_args2 {
-         $$ = processCallArgs($2, $3);
+         $$ = processCallArgs($2->type, $3);
       }
       | {
          $$ = new std::vector<Type*>();
@@ -369,7 +386,7 @@
 
    return_stmt2:
       exp {
-         $$ = $1;
+         $$ = $1->type;
       }
       | {
          $$ = createTypeVoid();
@@ -378,11 +395,19 @@
    
    var:
       NAME {
-         $$ = processVar($1);
+         $$ = new TacOperand{processVar($1), std::string($1)};
          delete $1;
       }
       | exp TOKEN_DOT NAME {
-         $$ = processVar($1, $3);
+         Type* field_type = processVar($1->type, $3);
+         std::string temp = "";
+
+         if (!isErrorType(field_type)) {
+            temp = new_temp();
+            emitter.emit(OpCode::TAC_MEMBER_READ, temp, $1->loc, std::string($3));
+         }
+         
+         $$ = new TacOperand{field_type, temp};
          delete $1;
          delete $3;
       }
@@ -390,89 +415,212 @@
    
    ref_var: 
       TOKEN_REF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
-         $$ = createType($3);
+         Type* pointer_type = createType($3->type);
+         std::string temp = new_temp();
+
+         if(!isErrorType(pointer_type)){
+            emitter.emit(OpCode::TAC_REF, temp, $3->loc);
+         }
+
+         $$ = new TacOperand{pointer_type, $3->loc};
+         delete $3;
       }
       ;
 
 
    deref_var:
       TOKEN_DEREF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
-         $$ = processDerefVar($3);
+         Type* type = processDerefVar($3->type);
+         std::string temp = new_temp();
+
+         if(!isErrorType(type)){
+            emitter.emit(OpCode::TAC_DEREF, temp, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $3;
       }
       | TOKEN_DEREF TOKEN_OPEN_PARENTHESIS deref_var TOKEN_CLOSE_PARENTHESIS {
-         $$ = processDerefVar($3);
+         $$ = new TacOperand{processDerefVar($3->type), $3->loc};
+         delete $3;
+
+         Type* type = processDerefVar($3->type);
+         std::string temp = new_temp();
+
+         if(!isErrorType(type)){
+            emitter.emit(OpCode::TAC_DEREF, temp, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $3;
       }
       ;
 
    exp:
       exp TOKEN_AND exp {
-         $$ = processExp($1, "&&", $3);
+         Type* type = processExp($1->type, "&&", $3->type);
+         std::string temp = new_temp();
+         
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_AND, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_OR exp {
-         $$ = processExp($1, "||", $3);
+         Type* type = processExp($1->type, "||", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_OR, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | TOKEN_NOT exp {
-         $$ = processExp("not", $2);
+         Type* type = processExp("not", $2->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_NOT, temp, $2->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $2;
       }
       | exp TOKEN_EQUAL exp {
-         $$ = processExp($1, "rel", $3);
+         Type* type = processExp($1->type, "rel", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_EQ, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_DIFF exp {
-         $$ = processExp($1, "rel", $3);
+         Type* type = processExp($1->type, "rel", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_NEQ, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_LESS exp {
-         $$ = processExp($1, "rel", $3);
+         Type* type = processExp($1->type, "rel", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_LT, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_LESS_EQUAL exp {
-         $$ = processExp($1, "rel", $3);
+         Type* type = processExp($1->type, "rel", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_LE, temp, $1->loc, $3->loc);
+         }
+         
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_GREATER exp {
-         $$ = processExp($1, "rel", $3);
+         Type* type = processExp($1->type, "rel", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_GT, temp, $1->loc, $3->loc);
+         }
+         
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_GREATER_EQUAL exp {
-         $$ = processExp($1, "rel", $3);
+         Type* type = processExp($1->type, "rel", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_GE, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_ADD exp {
-         $$ = processExp($1, "+", $3);
+         Type* type = processExp($1->type, "+", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_ADD, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_SUB exp {
-         $$ = processExp($1, "-", $3);
+         Type* type = processExp($1->type, "-", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_SUB, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_MULT exp {
-         $$ = processExp($1, "*", $3);
+         Type* type = processExp($1->type, "*", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_MULT, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_DIV exp {
-         $$ = processExp($1, "/", $3);
+         Type* type = processExp($1->type, "/", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_DIV, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
       | exp TOKEN_POT exp {
-         $$ = processExp($1, "^", $3);
+         Type* type = processExp($1->type, "^", $3->type);
+         std::string temp = new_temp();
+
+         if (!isErrorType(type)) {
+            emitter.emit(OpCode::TAC_POT, temp, $1->loc, $3->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $1;
          delete $3;
       }
@@ -480,7 +628,7 @@
          $$ = $1;
       }
       | call_stmt {
-         $$ = $1;
+         $$ = new TacOperand{$1, ""};
       }
       | var {
          $$ = $1;
@@ -493,35 +641,50 @@
       }
       | TOKEN_OPEN_PARENTHESIS exp TOKEN_CLOSE_PARENTHESIS {
          $$ = $2;
+         delete $2;
       }
       | TOKEN_SUB exp %prec UMINUS {
-         $$ = processExp("-", $2);
+         Type* type = processExp("-", $2->type);
+         std::string temp = new_temp();
+
+         if(!isErrorType(type)){
+            emitter.emit(OpCode::TAC_UNARY_MINUS, temp, $2->loc);
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $2;
       }
       | TOKEN_NEW NAME {
-         $$ = processExp($2);
+         Type* type = processExp($2);
+         std::string temp = new_temp();
+
+         if(!isErrorType(type)){
+            emitter.emit(OpCode::TAC_NEW, temp, std::string($2));
+         }
+
+         $$ = new TacOperand{type, temp};
          delete $2;
       }
       ;
 
    literal:
       INT_LITERAL {
-         $$ = createType(TYPE_INT);
+         $$ = new TacOperand{createType(TYPE_INT), std::to_string($1)};
       }
       | FLOAT_LITERAL {
-         $$ = createType(TYPE_FLOAT);
+         $$ = new TacOperand{createType(TYPE_FLOAT), std::to_string($1)};
       }
       | STRING_LITERAL {
-         $$ = createType(TYPE_STRING);
+         $$ = new TacOperand{createType(TYPE_STRING), $1};
       }
       | TOKEN_TRUE {
-         $$ = createType(TYPE_BOOL);
+         $$ = new TacOperand{createType(TYPE_BOOL), "true"};
       } 
       | TOKEN_FALSE {
-         $$ = createType(TYPE_BOOL);
+         $$ = new TacOperand{createType(TYPE_BOOL), "false"};
       }
       | TOKEN_NULL {
-         $$ = createTypeNull();
+         $$ = new TacOperand{createTypeNull(), "null"};
       }
       ;
 

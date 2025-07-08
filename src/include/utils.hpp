@@ -42,6 +42,11 @@ struct Paramfield {
    Type* type;
 };
 
+struct TacOperand {
+    Type* type;         // O tipo do resultado (que você já tem)
+    std::string loc;    // Onde o valor está (ex: "x", "5", "t3")
+};
+
 /// Protótipos do Lexer
 int yylex(void);
 void yyerror(char const* s);
