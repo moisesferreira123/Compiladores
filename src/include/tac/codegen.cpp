@@ -136,12 +136,13 @@ void CodeEmitter::write_to_file(const std::string& filename) {
                 outfile << indentation << "return " << instr.result << ";\n";
                 break;
             case OpCode::TAC_REF:
+                outfile << indentation << instr.result << " = &" << instr.arg1 << ";\n";
                 break;
             case OpCode::TAC_DEREF:
-                outfile << indentation << instr.result << " = &" << instr.arg1 << ";\n";
+                outfile << indentation << instr.result << " = *" << instr.arg1 << ";\n";
                 break;
             case OpCode::TAC_DEREF_ASSIGN:
-                outfile << indentation << instr.result << " = &" << instr.arg1 << ";\n";
+                outfile << indentation << instr.result << "* = &" << instr.arg1 << ";\n";
                 break;
             case OpCode::TAC_MEMBER_READ:
                 break;

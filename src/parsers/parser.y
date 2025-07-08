@@ -323,29 +323,71 @@
       ;
    
    if_stmt:
-      TOKEN_IF exp TOKEN_THEN stmt_list if_stmt2 TOKEN_FI {
-         $$ = processIfStmt($2->type, $4, $5);
+      TOKEN_IF exp {
+         std::string false_label = new_label();
+         emitter.emit(OpCode::TAC_IF_FALSE_GOTO, false_label, $2->loc);
+         label_stack.push_back(false_label);
+
+      }TOKEN_THEN stmt_list if_stmt2 TOKEN_FI {
+         $$ = processIfStmt($2->type, $5, $6);
          delete $2;
-         delete $4;
          delete $5;
+         if ($6 != nullptr && $6 != createTypeVoid()) {
+            delete $6;
+         }
       }
       ;
    
    if_stmt2:
-      TOKEN_ELSE stmt_list {
-         $$ = $2;
-      }
+      TOKEN_ELSE {
+         std::string end_label = new_label();
+         emitter.emit(OpCode::TAC_GOTO, end_label);
+
+         std::string false_label = label_stack.back();
+         label_stack.pop_back();
+
+         emitter.emit(OpCode::TAC_LABEL, false_label);
+         label_stack.push_back(end_label);
+
+      } stmt_list {
+         std::string end_label = label_stack.back(); label_stack.pop_back();
+         emitter.emit(OpCode::TAC_LABEL, end_label);
+         $$ = $3;
+      } 
       | {
+         std::string end_label = label_stack.back(); label_stack.pop_back();
+         emitter.emit(OpCode::TAC_LABEL, end_label);
          $$ = createTypeVoid();
       }
       ;
 
    while_stmt:
-      TOKEN_WHILE exp TOKEN_DO stmt_list TOKEN_OD {
-         $$ = processWhileStmt($2->type, $4);
-         delete $2;
-         delete $4;
-      }
+      TOKEN_WHILE {
+         std::string begin_label = new_label();
+         emitter.emit(OpCode::TAC_LABEL, begin_label);
+         label_stack.push_back(begin_label);
+
+      } exp {
+         Type* exp_type = $3->type;
+         if (!isErrorType(exp_type)) {
+            std::string end_label = new_label();
+            emitter.emit(OpCode::TAC_IF_FALSE_GOTO, end_label, $3->loc);
+            label_stack.push_back(end_label);  
+         }
+
+      } TOKEN_DO stmt_list {
+         std::string label_end = label_stack.back(); label_stack.pop_back();
+         std::string label_begin = label_stack.back(); label_stack.pop_back();
+
+         emitter.emit(OpCode::TAC_GOTO, label_begin);
+         emitter.emit(OpCode::TAC_LABEL, label_end);
+
+      } TOKEN_OD{
+         $$ = processWhileStmt($3->type, $6);
+         delete $3;
+         delete $6;
+
+      } 
       ;
 
    call_stmt:
