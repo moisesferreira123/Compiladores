@@ -926,12 +926,12 @@ void minusUnitaryNotValidError(Type* exp) {
 }
 
 std::string getUniqueName(std::string name) {
-   auto result = symbolTable.lookupWithId(name);
+   auto symbol = symbolTable.lookup(name);
 
-   if (result.first == nullptr) {
+   if (symbol == nullptr) {
       return name;
    } else {
-      return name + "_" + std::to_string(result.second);
+      return name + "_" + std::to_string(symbol->getScopeId());
    }
 }
 
@@ -940,7 +940,7 @@ std::string getTacType(Type* type) {
       return getTypeStr(type);
    } else if (type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM_VALUE
      || type->kind == TYPE_ENUM_VAR) {
-      int index = symbolTable.getScopeIdBySymbol(type->structured);
+      int index = type->structured->getScopeId();
       return type->structured->getName() + "_" + std::to_string(index);
    } else if (isReferenceKind(type->kind)) {
       return getTacType(type->ref) + "*";

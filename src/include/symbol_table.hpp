@@ -10,10 +10,13 @@
 class Symbol {
    private:
    std::string name;
+   int scopeId;
 
    public:
    Symbol(std::string name) : name(name) { }
    std::string getName() const { return name; }
+   void setScopeId(int scopeId) { this->scopeId = scopeId; }
+   int getScopeId() const { return scopeId; }
    virtual ~Symbol() { }
 };
 
@@ -126,6 +129,7 @@ class Node {
    ~Node() { }
 
    void insert(std::shared_ptr<Symbol> symbol) {
+      symbol->setScopeId(id);
       table.insert({ symbol->getName(), symbol });
    }
 
@@ -138,16 +142,6 @@ class Node {
       return nullptr;
    }
 
-   std::pair<std::shared_ptr<Symbol>, int> singleLookupWithId(
-     std::string const& name) {
-      auto it = table.find(name);
-      if (it != table.end()) {
-         return std::make_pair(it->second, id);
-      }
-
-      return std::make_pair(nullptr, -1);
-   }
-
    std::shared_ptr<Symbol> lookup(std::string const& name) {
       std::shared_ptr<Symbol> symbol = singleLookup(name);
       if (symbol != nullptr) {
@@ -157,35 +151,6 @@ class Node {
       }
 
       return nullptr;
-   }
-
-   std::pair<std::shared_ptr<Symbol>, int> lookupWithId(
-     std::string const& name) {
-      std::shared_ptr<Symbol> symbol = singleLookup(name);
-
-      if (symbol != nullptr) {
-         return std::make_pair(symbol, id);
-      } else if (parent != nullptr) {
-         return parent->lookupWithId(name);
-      }
-
-      return std::make_pair(nullptr, -1);
-   }
-
-   int getScopeIdBySymbol(std::shared_ptr<Symbol> symbol) {
-      if (!symbol) {
-         return -1;
-      }
-
-      auto it = table.find(symbol->getName());
-
-      if (it != table.end() && symbol == it->second) {
-         return id;
-      } else if (parent != nullptr) {
-         return parent->getScopeIdBySymbol(symbol);
-      } else {
-         return -1;
-      }
    }
 
    Node* getParent() { return parent; }
@@ -236,38 +201,12 @@ class SymbolTable {
       return current->singleLookup(name);
    }
 
-   std::pair<std::shared_ptr<Symbol>, int> singleLookupWithId(
-     std::string const& name) {
-      if (current == nullptr) {
-         return std::make_pair(nullptr, -1);
-      }
-
-      return current->singleLookupWithId(name);
-   }
-
    std::shared_ptr<Symbol> lookup(std::string const& name) {
       if (current == nullptr) {
          return nullptr;
       }
 
       return current->lookup(name);
-   }
-
-   std::pair<std::shared_ptr<Symbol>, int> lookupWithId(
-     std::string const& name) {
-      if (current == nullptr) {
-         return std::make_pair(nullptr, -1);
-      }
-
-      return current->lookupWithId(name);
-   }
-
-   int getScopeIdBySymbol(std::shared_ptr<Symbol> symbol) {
-      if (current == nullptr) {
-         return -1;
-      }
-
-      return current->getScopeIdBySymbol(symbol);
    }
 
    void reset() {
