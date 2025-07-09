@@ -1,6 +1,7 @@
 // run_tests.cpp
 #include "logger.hpp" // sua classe Logger
 #include "utils.hpp" // extern bool program_ok;
+#include <filesystem>
 #include <fstream>
 #include <getopt.h> // para getopt_long
 #include <iostream>
@@ -18,10 +19,18 @@ struct TestCase {
 };
 
 static const std::vector<TestCase> ALL_TESTS = {
-   {        "tests/files/swap.c25", true },
-   {      "tests/files/person.c25", true },
-   { "tests/files/day_of_week.c25", true },
-   // adicione outros testes aqui
+   {        "tests/files/swap.c25",  true },
+   {      "tests/files/person.c25",  true },
+   { "tests/files/day_of_week.c25",  true },
+   {      "tests/files/error1.c25", false },
+   {      "tests/files/error2.c25", false },
+   {      "tests/files/error3.c25", false },
+   {      "tests/files/error4.c25", false },
+   {      "tests/files/error5.c25", false },
+   {      "tests/files/error6.c25", false },
+   {      "tests/files/error7.c25", false },
+   {      "tests/files/error8.c25", false },
+   {      "tests/files/error9.c25", false },
 };
 
 void printHelp(const char* progName) {
@@ -91,10 +100,13 @@ int main(int argc, char* argv[]) {
       flagAll = true;
    }
 
+   std::filesystem::create_directory("output"); /// Criando pasta de saída
+
    // abre log para parser (mantém cores ANSI)
-   std::ofstream parserLog("log.txt", std::ios::out | std::ios::trunc);
+   std::ofstream parserLog(
+     "output/tests_log.txt", std::ios::out | std::ios::trunc);
    if (!parserLog) {
-      Logger::error("Falha ao criar log.txt");
+      Logger::error("Falha ao criar output/tests_log.txt");
       return 1;
    }
 

@@ -85,9 +85,8 @@ bool isAssignable(Type* to, Type* from) {
    } else if (isSpecialKind(to->kind) && isSpecialKind(from->kind)) {
       return to->structured == from->structured; // Ambos eram estruturais
    } else if (isEnumVarKind(to->kind)) {
-      return from->kind == TYPE_INT
-        || ((from->kind == TYPE_ENUM_VALUE || from->kind == TYPE_ENUM_VAR)
-          && to->structured == from->structured);
+      return ((from->kind == TYPE_ENUM_VALUE || from->kind == TYPE_ENUM_VAR)
+        && to->structured == from->structured);
    } else {
       return false;
    }
@@ -135,8 +134,7 @@ void processProgram(bool ok) {
 
 bool processVarDecl(Type* type, Type* var_decl_2, char* name) {
    // Busca na tabela de símbolos apenas no nó atual
-   std::shared_ptr<Symbol> symbol
-     = symbolTable.single_lookup(std::string(name));
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(std::string(name));
 
    if (symbol != nullptr) {
       // Variável redeclarada
@@ -197,8 +195,7 @@ bool processProcedureDecl(char* name,
             return false;
          }
 
-         std::shared_ptr<Symbol> symbol
-           = symbolTable.single_lookup(param->name);
+         std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(param->name);
 
          if (symbol == nullptr) {
             // Variável não declarada
@@ -220,7 +217,7 @@ bool processProcedureDecl(char* name,
 
 void processParamfieldDecl(Paramfield* paramfield) {
    // Busca na tabela de símbolos apenas no nó atual
-   std::shared_ptr<Symbol> symbol = symbolTable.single_lookup(paramfield->name);
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(paramfield->name);
 
    if (symbol != nullptr) {
       // Variável redeclarada
@@ -252,8 +249,7 @@ bool processRecordDecl(char* name, std::vector<Paramfield*>* record_fields) {
             return false;
          }
 
-         std::shared_ptr<Symbol> symbol
-           = symbolTable.single_lookup(field->name);
+         std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(field->name);
 
          if (symbol == nullptr) {
             // Variável não declarada
@@ -582,7 +578,7 @@ bool insertProcedure(
   std::string name, Type* type, std::vector<std::shared_ptr<Variable>> params) {
    symbolTable.exitScope();
 
-   std::shared_ptr<Symbol> symbol = symbolTable.single_lookup(name);
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(name);
    if (symbol != nullptr) {
       // Procedimento redeclarado
       procedureRedeclaredError(name);
@@ -599,7 +595,7 @@ bool insertRecord(
   std::string name, std::vector<std::shared_ptr<Variable>> fields) {
    symbolTable.exitScope();
 
-   std::shared_ptr<Symbol> symbol = symbolTable.single_lookup(name);
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(name);
    if (symbol != nullptr) {
       // Registro redeclarado
       recordRedeclaredError(name);
@@ -612,7 +608,7 @@ bool insertRecord(
 }
 
 bool insertEnum(std::string name, std::vector<std::string>* values) {
-   std::shared_ptr<Symbol> symbol = symbolTable.single_lookup(name);
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(name);
 
    if (symbol != nullptr) {
       // Enum redeclarado
@@ -724,10 +720,8 @@ std::string getTypeStr(Type* type) {
       return "*" + getTypeStr(type->ref);
    } else if (type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM
      || type->kind == TYPE_ENUM_VALUE || type->kind == TYPE_ENUM_VAR) {
-      return "sym[" + type->structured->getName() + "["
-        + std::to_string(
-          reinterpret_cast<std::uintptr_t>(type->structured.get()))
-        + "]";
+      return type->structured->getName() + "["
+        + std::to_string(type->structured->getScopeId()) + "]";
    } else {
       return "error";
    }
@@ -926,4 +920,29 @@ void minusUnitaryNotValidError(Type* exp) {
    std::string error = "Erro semântico: operador \"-\" inválido para o tipo \""
      + getTypeStr(exp) + "\".";
    yyerror(error.c_str());
+}
+
+std::string getUniqueName(std::string name) {
+   auto symbol = symbolTable.lookup(name);
+
+   if (symbol == nullptr) {
+      return name;
+   } else {
+      return name + "_" + std::to_string(symbol->getScopeId());
+   }
+}
+
+std::string getTacType(Type* type) {
+   if (isPrimitiveKind(type->kind)) {
+      return getTypeStr(type);
+   } else if (type->kind == TYPE_STRUCT) {
+      int index = type->structured->getScopeId();
+      return type->structured->getName() + "_" + std::to_string(index);
+   } else if (type->kind == TYPE_ENUM_VALUE || type->kind == TYPE_ENUM_VAR) {
+      return "int";
+   } else if (isReferenceKind(type->kind)) {
+      return getTacType(type->ref) + "*";
+   } else {
+      return "error";
+   }
 }

@@ -1,0 +1,31 @@
+program personexample
+begin
+   struct Person {
+      name: string;
+      age: int
+   };
+
+   struct Pair {
+      male: Person;
+      female: Person
+   };
+
+   var pair1: Pair;
+
+   procedure main()
+   begin
+      struct Pair {
+         friend1: Person;
+         friend2: Person
+      };
+      var pair: Pair
+   in 
+      pair.friend1 := new Person;
+      pair.friend2 := new Person;
+
+      pair.friend1.age := 2025 - 2003;
+      if pair.friend2.age > 18 then
+         pair.friend2.name := "Pedro"
+      fi
+   end
+end

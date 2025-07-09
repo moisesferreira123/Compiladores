@@ -1,0 +1,32 @@
+program day_of_week
+begin
+   enum dayOfWeek = {
+      MONDAY,
+      TUESDAY,
+      WEDNESDAY,
+      THURSDAY,
+      FRIDAY,
+      SATURDAY,
+      SUNDAY
+   };
+
+   procedure add(a: int, b: int): int
+   begin
+      return a + b
+   end;
+
+   procedure main()
+   begin
+      var day: dayOfWeek;
+      var x := 6
+   in
+      while x >= 0 && x <= 4 do
+         day := dayOfWeek.SEGUNDA;
+         if x = 3 then
+            x := x * 2
+         else
+            x := add(x, 1)
+         fi
+      od
+   end
+end

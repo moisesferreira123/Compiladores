@@ -53,7 +53,7 @@
 %type <ok> program decl_block decl_block2 decl  
 %type <ok> var_decl procedure_decl record_decl enum_decl
 %type <ok> scope_declarations assign_stmt
-%type <type> type var_decl2 stmt stmt_list stmt_list2
+%type <type> type stmt stmt_list stmt_list2
 %type <type> return_type return_stmt return_stmt2 
 %type <type> call_stmt if_stmt if_stmt2 while_stmt 
 %type <paramfield> paramfield_decl
@@ -62,13 +62,7 @@
 %type <names_list> enum_field
 %type <types_list> call_args call_args2
 
-%type <tac_operand> exp literal var ref_var deref_var 
-
-/// TODO: Tipos estruturados tem regras especiais:
-/// 1. Em var: exp . NAME, exp pode ser o NAME de uma Enumeração (não variável) e o NAME um campo dentro da Enumeração
-///   o exp não pode ser uma variável do tipo daquela enumeração.
-/// 2. Na mesma regra, para um Struct, o exp deverá ser uma variável e não pode ser o Struct mesmo.
-///   É necessário uma maneira de diferenciar os types de quem é uma variável do tipo X e do tipo X.
+%type <tac_operand> exp literal var ref_var deref_var var_decl2
 
 /// Regra inicial
 %start program
@@ -120,13 +114,34 @@
    
    var_decl:
       TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
-         $$ = processVarDecl($4, $5, $2);
+         $$ = processVarDecl($4, $5->type, $2);
+
+         if ($$) {
+            std::string varName = getUniqueName($2);
+            std::string tacType = getTacType($4);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_VAR_DECL, varName));
+
+            Type* varDecl2Type = $5->type;
+            if (!isNullKind(varDecl2Type->kind)) {
+               emitter.emit(OpCode::TAC_ASSIGN, varName, $5->loc);
+            }
+         }
+
          delete $2;
          delete $4;
          delete $5;
       }
       | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
          $$ = processVarDecl($4->type, $2);
+
+         if ($$) {
+            Type* expType = $4->type;
+            std::string varName = getUniqueName($2);
+            std::string tacType = getTacType(expType);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_VAR_DECL, varName));
+            emitter.emit(OpCode::TAC_ASSIGN, varName, $4->loc);
+         }
+
          delete $2;
          delete $4;
       }
@@ -134,10 +149,10 @@
    
    var_decl2: 
       TOKEN_ATTRIBUTION exp {
-         $$ = $2->type;
+         $$ = $2;
       }
       | {
-         $$ = createTypeNull();
+         $$ = new TacOperand{createTypeNull(), ""};
       }
 
    procedure_decl:
@@ -232,7 +247,7 @@
 
    enum_decl:
       TOKEN_ENUM NAME TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES {
-         $6->push_back(std::string($5));
+         $6->insert($6->begin(), std::string($5));
 
          $$ = processEnumDecl($2, $6);
 
@@ -442,19 +457,41 @@
    
    var:
       NAME {
-         $$ = new TacOperand{processVar($1), std::string($1)};
+         Type* type = processVar($1);
+         $$ = new TacOperand{type, getUniqueName($1)};
          delete $1;
       }
       | exp TOKEN_DOT NAME {
          Type* field_type = processVar($1->type, $3);
-         std::string temp = "";
+         std::string name = "";
 
          if (!isErrorType(field_type)) {
-            temp = new_temp();
-            emitter.emit(OpCode::TAC_MEMBER_READ, temp, $1->loc, std::string($3));
+            Type* type = $1->type;
+            if ($1->type->kind == TYPE_STRUCT) {
+               std::shared_ptr<Struct> record = std::dynamic_pointer_cast<Struct>(type->structured);
+               std::string field_name = "";
+               
+               for (std::shared_ptr<Variable> field : record->getFields()) {
+                  if (field->getName() == $3) {
+                     field_name = field->getName() + "_" + std::to_string(field->getScopeId());
+                     break;
+                  }
+               }
+               name = $1->loc + "." + field_name;
+            } else if (type->kind == TYPE_ENUM) {
+               std::shared_ptr<Enum> enumerate = std::dynamic_pointer_cast<Enum>(type->structured);
+               std::vector<std::string> enumValues = enumerate->getValues();
+               
+               for (int i = 0; i < enumValues.size(); i++) {
+                  if (enumValues[i] == $3) {
+                     name = std::to_string(i);
+                     break;
+                  }
+               }
+            }
          }
          
-         $$ = new TacOperand{field_type, temp};
+         $$ = new TacOperand{field_type, name};
          delete $1;
          delete $3;
       }
@@ -509,7 +546,8 @@
          std::string temp = new_temp();
          
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_AND, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_AND, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -521,7 +559,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_OR, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_OR, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -533,7 +572,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_NOT, temp, $2->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_NOT, temp, $2->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -544,7 +584,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_EQ, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_EQ, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -556,7 +597,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_NEQ, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_NEQ, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -568,7 +610,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_LT, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_LT, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -580,7 +623,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_LE, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_LE, temp, $1->loc, $3->loc));
          }
          
          $$ = new TacOperand{type, temp};
@@ -592,7 +636,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_GT, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_GT, temp, $1->loc, $3->loc));
          }
          
          $$ = new TacOperand{type, temp};
@@ -604,7 +649,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_GE, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_GE, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -616,7 +662,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_ADD, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_ADD, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -628,7 +675,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_SUB, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_SUB, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -640,7 +688,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_MULT, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_MULT, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -652,7 +701,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_DIV, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_DIV, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -664,7 +714,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_POT, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_POT, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -688,14 +739,14 @@
       }
       | TOKEN_OPEN_PARENTHESIS exp TOKEN_CLOSE_PARENTHESIS {
          $$ = $2;
-         delete $2;
       }
       | TOKEN_SUB exp %prec UMINUS {
          Type* type = processExp("-", $2->type);
          std::string temp = new_temp();
 
          if(!isErrorType(type)){
-            emitter.emit(OpCode::TAC_UNARY_MINUS, temp, $2->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_UNARY_MINUS, temp, $2->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -706,7 +757,8 @@
          std::string temp = new_temp();
 
          if(!isErrorType(type)){
-            emitter.emit(OpCode::TAC_NEW, temp, std::string($2));
+            std::string uniqueName = getUniqueName($2);
+            emitter.emit(TAC_Instruction(uniqueName, OpCode::TAC_NEW, temp, uniqueName));
          }
 
          $$ = new TacOperand{type, temp};

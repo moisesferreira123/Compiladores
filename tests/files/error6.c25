@@ -1,15 +1,14 @@
 program personexample
 begin
-   struct Person {
+   struct Person{
       name: string;
       age: int
    };
    procedure main()
    begin
       var person: Person
-   in 
-      person := new Person;
-      person.age := 2025 - 2003;
+   in
+      person.age := "18";
       if person.age > 18 then
          person.name := "Pedro"
       fi

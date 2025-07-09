@@ -43,8 +43,8 @@ struct Paramfield {
 };
 
 struct TacOperand {
-    Type* type;         // O tipo do resultado (que você já tem)
-    std::string loc;    // Onde o valor está (ex: "x", "5", "t3")
+   Type* type; // O tipo do resultado (que você já tem)
+   std::string loc; // Onde o valor está (ex: "x", "5", "t3")
 };
 
 /// Protótipos do Lexer
@@ -148,5 +148,9 @@ void expectedSpecialSymbolError(std::string name);
 void operationNotValidError(std::string op);
 void operationNotValidError(Type* exp1, std::string op, Type* exp2);
 void minusUnitaryNotValidError(Type* exp);
+
+/// Funções do Tac
+std::string getUniqueName(std::string name);
+std::string getTacType(Type* type);
 
 #endif /// UTILS_HPP
