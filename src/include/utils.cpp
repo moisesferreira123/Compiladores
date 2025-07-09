@@ -85,9 +85,8 @@ bool isAssignable(Type* to, Type* from) {
    } else if (isSpecialKind(to->kind) && isSpecialKind(from->kind)) {
       return to->structured == from->structured; // Ambos eram estruturais
    } else if (isEnumVarKind(to->kind)) {
-      return from->kind == TYPE_INT
-        || ((from->kind == TYPE_ENUM_VALUE || from->kind == TYPE_ENUM_VAR)
-          && to->structured == from->structured);
+      return ((from->kind == TYPE_ENUM_VALUE || from->kind == TYPE_ENUM_VAR)
+        && to->structured == from->structured);
    } else {
       return false;
    }
@@ -938,10 +937,11 @@ std::string getUniqueName(std::string name) {
 std::string getTacType(Type* type) {
    if (isPrimitiveKind(type->kind)) {
       return getTypeStr(type);
-   } else if (type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM_VALUE
-     || type->kind == TYPE_ENUM_VAR) {
+   } else if (type->kind == TYPE_STRUCT) {
       int index = type->structured->getScopeId();
       return type->structured->getName() + "_" + std::to_string(index);
+   } else if (type->kind == TYPE_ENUM_VALUE || type->kind == TYPE_ENUM_VAR) {
+      return "int";
    } else if (isReferenceKind(type->kind)) {
       return getTacType(type->ref) + "*";
    } else {

@@ -242,7 +242,7 @@
 
    enum_decl:
       TOKEN_ENUM NAME TOKEN_EQUAL TOKEN_OPEN_BRACES NAME enum_field TOKEN_CLOSE_BRACES {
-         $6->push_back(std::string($5));
+         $6->insert($6->begin(), std::string($5));
 
          $$ = processEnumDecl($2, $6);
 
@@ -458,14 +458,35 @@
       }
       | exp TOKEN_DOT NAME {
          Type* field_type = processVar($1->type, $3);
-         std::string temp = "";
+         std::string name = "";
 
          if (!isErrorType(field_type)) {
-            temp = new_temp();
-            emitter.emit(OpCode::TAC_MEMBER_READ, temp, $1->loc, std::string($3));
+            Type* type = $1->type;
+            if ($1->type->kind == TYPE_STRUCT) {
+               std::shared_ptr<Struct> record = std::dynamic_pointer_cast<Struct>(type->structured);
+               std::string field_name = "";
+               
+               for (std::shared_ptr<Variable> field : record->getFields()) {
+                  if (field->getName() == $3) {
+                     field_name = field->getName() + "_" + std::to_string(field->getScopeId());
+                     break;
+                  }
+               }
+               name = $1->loc + "." + field_name;
+            } else if (type->kind == TYPE_ENUM) {
+               std::shared_ptr<Enum> enumerate = std::dynamic_pointer_cast<Enum>(type->structured);
+               std::vector<std::string> enumValues = enumerate->getValues();
+               
+               for (int i = 0; i < enumValues.size(); i++) {
+                  if (enumValues[i] == $3) {
+                     name = std::to_string(i);
+                     break;
+                  }
+               }
+            }
          }
          
-         $$ = new TacOperand{field_type, temp};
+         $$ = new TacOperand{field_type, name};
          delete $1;
          delete $3;
       }
