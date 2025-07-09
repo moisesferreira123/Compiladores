@@ -134,6 +134,7 @@ class Node {
       if (it != table.end()) {
          return it->second;
       }
+      
       return nullptr;
    }
 
@@ -142,8 +143,8 @@ class Node {
       auto it = table.find(name);
       if (it != table.end()) {
          return std::make_pair(it->second, id);
-         ;
       }
+
       return std::make_pair(nullptr, -1);
    }
 
@@ -166,6 +167,20 @@ class Node {
          return std::make_pair(symbol, id);
       } else if (parent != nullptr) {
          return parent->lookupWithId(name);
+      }
+
+      return std::make_pair(nullptr, -1);
+   }
+
+   int getScopeIdBySymbol(std::shared_ptr<Symbol> symbol) {
+      auto it = table.find(symbol->getName());
+
+      if (symbol == it->second) {
+         return id;
+      } else if (parent != nullptr) {
+         return parent->getScopeIdBySymbol(symbol);
+      } else {
+         return -1;
       }
    }
 
@@ -241,6 +256,14 @@ class SymbolTable {
       }
 
       return current->lookupWithId(name);
+   }
+
+   int getScopeIdBySymbol(std::shared_ptr<Symbol> symbol) {
+      if (current == nullptr) {
+         return -1;
+      }
+
+      return current->getScopeIdBySymbol(symbol);
    }
 
    void reset() {

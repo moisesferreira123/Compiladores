@@ -7,7 +7,8 @@ begin
    procedure main()
    begin
       var person: Person
-   in
+   in 
+      person := new Person;
       person.age := 2025 - 2003;
       if person.age > 18 then
          person.name := "Pedro"

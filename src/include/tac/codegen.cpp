@@ -60,20 +60,20 @@ void CodeEmitter::write_to_file(const std::string& filename) {
          case OpCode::TAC_ATR:
             break;
          case OpCode::TAC_ADD:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " + " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " + " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_SUB:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " - " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " - " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_MULT:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " * " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " * " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_DIV:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " / " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " / " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_POT: {
             // TODO: Tem que lidar com o tipo do temp_arg1
@@ -91,46 +91,46 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             break;
          }
          case OpCode::TAC_UNARY_MINUS:
-            outfile << indentation << instr.result << " = -" << instr.arg1
-                    << ";\n";
+            outfile << indentation << instr.type << " " << instr.result
+                    << " = -" << instr.arg1 << ";\n";
             break;
          case OpCode::TAC_EQ:
             // TODO: Acho que tem que analisar se é um tipo enum para ver como
             // comparar
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " == " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " == " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_NEQ:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " != " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " != " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_LT:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " < " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " < " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_GT:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " > " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " > " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_LE:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " <= " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " <= " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_GE:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " >= " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " >= " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_OR:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " || " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " || " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_AND:
-            outfile << indentation << instr.result << " = " << instr.arg1
-                    << " && " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " && " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_NOT:
-            outfile << indentation << instr.result << " = " << "!" << instr.arg1
-                    << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << "!" << instr.arg1 << ";\n";
             break;
          case OpCode::TAC_GOTO:
             outfile << indentation << "goto " << instr.result << ";\n";
@@ -176,6 +176,10 @@ void CodeEmitter::write_to_file(const std::string& filename) {
          case OpCode::TAC_MEMBER_ASSIGN:
             break;
          case OpCode::TAC_MEMBER_ACCESS:
+            break;
+         case OpCode::TAC_NEW:
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << "();\n";
             break;
       }
    }

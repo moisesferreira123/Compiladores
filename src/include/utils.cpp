@@ -135,8 +135,7 @@ void processProgram(bool ok) {
 
 bool processVarDecl(Type* type, Type* var_decl_2, char* name) {
    // Busca na tabela de símbolos apenas no nó atual
-   std::shared_ptr<Symbol> symbol
-     = symbolTable.singleLookup(std::string(name));
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(std::string(name));
 
    if (symbol != nullptr) {
       // Variável redeclarada
@@ -197,8 +196,7 @@ bool processProcedureDecl(char* name,
             return false;
          }
 
-         std::shared_ptr<Symbol> symbol
-           = symbolTable.singleLookup(param->name);
+         std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(param->name);
 
          if (symbol == nullptr) {
             // Variável não declarada
@@ -252,8 +250,7 @@ bool processRecordDecl(char* name, std::vector<Paramfield*>* record_fields) {
             return false;
          }
 
-         std::shared_ptr<Symbol> symbol
-           = symbolTable.singleLookup(field->name);
+         std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(field->name);
 
          if (symbol == nullptr) {
             // Variável não declarada
@@ -926,4 +923,28 @@ void minusUnitaryNotValidError(Type* exp) {
    std::string error = "Erro semântico: operador \"-\" inválido para o tipo \""
      + getTypeStr(exp) + "\".";
    yyerror(error.c_str());
+}
+
+std::string getUniqueName(std::string name) {
+   auto result = symbolTable.lookupWithId(name);
+
+   if (result.first == nullptr) {
+      return name;
+   } else {
+      return name + "_" + std::to_string(result.second);
+   }
+}
+
+std::string getTacType(Type* type) {
+   if (isPrimitiveKind(type->kind)) {
+      return getTypeStr(type);
+   } else if (type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM_VALUE
+     || type->kind == TYPE_ENUM_VAR) {
+      int index = symbolTable.getScopeIdBySymbol(type->structured);
+      return type->structured->getName() + "_" + std::to_string(index);
+   } else if (isReferenceKind(type->kind)) {
+      return getTacType(type->ref) + "*";
+   } else {
+      return "error";
+   }
 }

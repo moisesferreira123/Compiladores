@@ -498,7 +498,8 @@
          std::string temp = new_temp();
          
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_AND, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_AND, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -510,7 +511,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_OR, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_OR, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -522,7 +524,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_NOT, temp, $2->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_NOT, temp, $2->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -533,7 +536,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_EQ, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_EQ, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -545,7 +549,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_NEQ, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_NEQ, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -557,7 +562,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_LT, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_LT, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -569,7 +575,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_LE, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_LE, temp, $1->loc, $3->loc));
          }
          
          $$ = new TacOperand{type, temp};
@@ -581,7 +588,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_GT, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_GT, temp, $1->loc, $3->loc));
          }
          
          $$ = new TacOperand{type, temp};
@@ -593,7 +601,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_GE, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_GE, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -605,7 +614,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_ADD, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_ADD, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -617,7 +627,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_SUB, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_SUB, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -629,7 +640,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_MULT, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_MULT, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -641,7 +653,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_DIV, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_DIV, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -653,7 +666,8 @@
          std::string temp = new_temp();
 
          if (!isErrorType(type)) {
-            emitter.emit(OpCode::TAC_POT, temp, $1->loc, $3->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_POT, temp, $1->loc, $3->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -677,14 +691,14 @@
       }
       | TOKEN_OPEN_PARENTHESIS exp TOKEN_CLOSE_PARENTHESIS {
          $$ = $2;
-         delete $2;
       }
       | TOKEN_SUB exp %prec UMINUS {
          Type* type = processExp("-", $2->type);
          std::string temp = new_temp();
 
          if(!isErrorType(type)){
-            emitter.emit(OpCode::TAC_UNARY_MINUS, temp, $2->loc);
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_UNARY_MINUS, temp, $2->loc));
          }
 
          $$ = new TacOperand{type, temp};
@@ -695,7 +709,8 @@
          std::string temp = new_temp();
 
          if(!isErrorType(type)){
-            emitter.emit(OpCode::TAC_NEW, temp, std::string($2));
+            std::string uniqueName = getUniqueName($2);
+            emitter.emit(TAC_Instruction(uniqueName, OpCode::TAC_NEW, temp, uniqueName));
          }
 
          $$ = new TacOperand{type, temp};
