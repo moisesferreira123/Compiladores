@@ -1,6 +1,0 @@
-[34m[Mon Jul  7 10:24:30 2025] [INFO] Nenhum erro encontrado. Gerando código de máquina.[0m
-[32m[Mon Jul  7 10:24:30 2025] [SUCCESS] Análise sintática concluída com sucesso: estrutura do programa válida.[0m
-[34m[Mon Jul  7 10:24:30 2025] [INFO] Nenhum erro encontrado. Gerando código de máquina.[0m
-[32m[Mon Jul  7 10:24:30 2025] [SUCCESS] Análise sintática concluída com sucesso: estrutura do programa válida.[0m
-[34m[Mon Jul  7 10:24:30 2025] [INFO] Nenhum erro encontrado. Gerando código de máquina.[0m
-[32m[Mon Jul  7 10:24:30 2025] [SUCCESS] Análise sintática concluída com sucesso: estrutura do programa válida.[0m

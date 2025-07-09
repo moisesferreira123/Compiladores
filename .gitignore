@@ -43,3 +43,4 @@
 # add configs
 .vscode
 build
+output
