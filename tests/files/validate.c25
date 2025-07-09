@@ -4,9 +4,10 @@ begin
    procedure main()
       begin
          var x: int := m;
-         var y := 15;
-         var k : int := y + 6
+         var y := 15.6;
+         var k := y + 6
       in
-         x := m + k
+         x := x + m;
+         y := k - y
       end
 end
