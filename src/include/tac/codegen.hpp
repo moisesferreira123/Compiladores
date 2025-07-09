@@ -29,6 +29,12 @@ public:
     // Uma sobrecarga (helper) para facilitar a vida. Cria e adiciona a instrução em um só passo.
     void emit(OpCode op, std::string result, std::string arg1 = "", std::string arg2 = "");
 
+    void emitProcedureBegin(const std::string& procedure_name);
+    
+    void emitProcedureParams(std::vector<Paramfield*>* procedure_params);
+    
+    void emitProcedureEnd();
+
     // Escreve o código C final no arquivo.
     void write_to_file(const std::string& filename);
 };

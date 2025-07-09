@@ -47,9 +47,10 @@ enum class OpCode {
     TAC_MEMBER_ASSIGN,// result.arg1 = arg2       (para s.f = x)
 
     TAC_MEMBER_ACCESS,
-    TAC_NEW
+    TAC_NEW,
+    // Moisés adcionou isso:
+    TAC_STACK_POP_LABEL // result = stack_label.pop()
 
-    
     // Para acesso a membros de struct, etc. (Podemos adicionar depois)
 };
 

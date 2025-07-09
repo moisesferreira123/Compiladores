@@ -2,6 +2,8 @@
    #include "symbol_table.hpp"
    #include "tac/codegen.hpp"
    #include "tac/tac.hpp"
+
+   extern CodeEmitter emitter;
 %}
 
 %code requires {
@@ -141,8 +143,11 @@
    procedure_decl:
       TOKEN_PROCEDURE NAME {
          symbolTable.enterScope();
+         emitProcedureBegin($2);
       } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          $$ = processProcedureDecl($2, $5, $7, $9, $10);
+         emitProcedureParams($5);
+         emitProcedureEnd();
 
          delete $2;
          for (auto p : *$5) {
