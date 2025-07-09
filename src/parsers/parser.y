@@ -137,7 +137,6 @@
             std::string varName = getUniqueName($2);
             std::string tacType = getTacType(expType);
             emitter.emit(TAC_Instruction(tacType, OpCode::TAC_VAR_DECL, varName));
-
             emitter.emit(OpCode::TAC_ASSIGN, varName, $4->loc);
          }
 

@@ -134,7 +134,7 @@ class Node {
       if (it != table.end()) {
          return it->second;
       }
-      
+
       return nullptr;
    }
 
@@ -173,9 +173,13 @@ class Node {
    }
 
    int getScopeIdBySymbol(std::shared_ptr<Symbol> symbol) {
+      if (!symbol) {
+         return -1;
+      }
+
       auto it = table.find(symbol->getName());
 
-      if (symbol == it->second) {
+      if (it != table.end() && symbol == it->second) {
          return id;
       } else if (parent != nullptr) {
          return parent->getScopeIdBySymbol(symbol);
