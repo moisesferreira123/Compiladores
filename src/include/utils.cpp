@@ -136,7 +136,7 @@ void processProgram(bool ok) {
 bool processVarDecl(Type* type, Type* var_decl_2, char* name) {
    // Busca na tabela de símbolos apenas no nó atual
    std::shared_ptr<Symbol> symbol
-     = symbolTable.single_lookup(std::string(name));
+     = symbolTable.singleLookup(std::string(name));
 
    if (symbol != nullptr) {
       // Variável redeclarada
@@ -198,7 +198,7 @@ bool processProcedureDecl(char* name,
          }
 
          std::shared_ptr<Symbol> symbol
-           = symbolTable.single_lookup(param->name);
+           = symbolTable.singleLookup(param->name);
 
          if (symbol == nullptr) {
             // Variável não declarada
@@ -220,7 +220,7 @@ bool processProcedureDecl(char* name,
 
 void processParamfieldDecl(Paramfield* paramfield) {
    // Busca na tabela de símbolos apenas no nó atual
-   std::shared_ptr<Symbol> symbol = symbolTable.single_lookup(paramfield->name);
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(paramfield->name);
 
    if (symbol != nullptr) {
       // Variável redeclarada
@@ -253,7 +253,7 @@ bool processRecordDecl(char* name, std::vector<Paramfield*>* record_fields) {
          }
 
          std::shared_ptr<Symbol> symbol
-           = symbolTable.single_lookup(field->name);
+           = symbolTable.singleLookup(field->name);
 
          if (symbol == nullptr) {
             // Variável não declarada
@@ -582,7 +582,7 @@ bool insertProcedure(
   std::string name, Type* type, std::vector<std::shared_ptr<Variable>> params) {
    symbolTable.exitScope();
 
-   std::shared_ptr<Symbol> symbol = symbolTable.single_lookup(name);
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(name);
    if (symbol != nullptr) {
       // Procedimento redeclarado
       procedureRedeclaredError(name);
@@ -599,7 +599,7 @@ bool insertRecord(
   std::string name, std::vector<std::shared_ptr<Variable>> fields) {
    symbolTable.exitScope();
 
-   std::shared_ptr<Symbol> symbol = symbolTable.single_lookup(name);
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(name);
    if (symbol != nullptr) {
       // Registro redeclarado
       recordRedeclaredError(name);
@@ -612,7 +612,7 @@ bool insertRecord(
 }
 
 bool insertEnum(std::string name, std::vector<std::string>* values) {
-   std::shared_ptr<Symbol> symbol = symbolTable.single_lookup(name);
+   std::shared_ptr<Symbol> symbol = symbolTable.singleLookup(name);
 
    if (symbol != nullptr) {
       // Enum redeclarado

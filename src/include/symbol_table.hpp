@@ -117,18 +117,19 @@ class Enum : public Symbol {
 // Nó da Árvore de escopos
 class Node {
    private:
+   int id;
    std::unordered_map<std::string, std::shared_ptr<Symbol>> table;
    Node* parent;
 
    public:
-   Node(Node* parent) : parent(parent) { }
+   Node(int id, Node* parent) : id(id), parent(parent) { }
    ~Node() { }
 
    void insert(std::shared_ptr<Symbol> symbol) {
       table.insert({ symbol->getName(), symbol });
    }
 
-   std::shared_ptr<Symbol> single_lookup(std::string const& name) {
+   std::shared_ptr<Symbol> singleLookup(std::string const& name) {
       auto it = table.find(name);
       if (it != table.end()) {
          return it->second;
@@ -136,8 +137,18 @@ class Node {
       return nullptr;
    }
 
+   std::pair<std::shared_ptr<Symbol>, int> singleLookupWithId(
+     std::string const& name) {
+      auto it = table.find(name);
+      if (it != table.end()) {
+         return std::make_pair(it->second, id);
+         ;
+      }
+      return std::make_pair(nullptr, -1);
+   }
+
    std::shared_ptr<Symbol> lookup(std::string const& name) {
-      std::shared_ptr<Symbol> symbol = single_lookup(name);
+      std::shared_ptr<Symbol> symbol = singleLookup(name);
       if (symbol != nullptr) {
          return symbol;
       } else if (parent != nullptr) {
@@ -147,7 +158,19 @@ class Node {
       return nullptr;
    }
 
+   std::pair<std::shared_ptr<Symbol>, int> lookupWithId(
+     std::string const& name) {
+      std::shared_ptr<Symbol> symbol = singleLookup(name);
+
+      if (symbol != nullptr) {
+         return std::make_pair(symbol, id);
+      } else if (parent != nullptr) {
+         return parent->lookupWithId(name);
+      }
+   }
+
    Node* getParent() { return parent; }
+   int getId() { return id; }
 };
 
 class SymbolTable {
@@ -156,7 +179,7 @@ class SymbolTable {
    int scopes;
 
    public:
-   SymbolTable() : current(new Node(nullptr)), scopes(1) { }
+   SymbolTable() : current(new Node(1, nullptr)), scopes(1) { }
 
    ~SymbolTable() {
       while (current != nullptr) {
@@ -174,10 +197,7 @@ class SymbolTable {
       current->insert(symbol);
    }
 
-   void enterScope() {
-      current = new Node(current);
-      scopes++;
-   }
+   void enterScope() { current = new Node(++scopes, current); }
 
    void exitScope() {
       if (current == nullptr) {
@@ -189,12 +209,21 @@ class SymbolTable {
       current = tmp;
    }
 
-   std::shared_ptr<Symbol> single_lookup(std::string const& name) {
+   std::shared_ptr<Symbol> singleLookup(std::string const& name) {
       if (current == nullptr) {
          return nullptr;
       }
 
-      return current->single_lookup(name);
+      return current->singleLookup(name);
+   }
+
+   std::pair<std::shared_ptr<Symbol>, int> singleLookupWithId(
+     std::string const& name) {
+      if (current == nullptr) {
+         return std::make_pair(nullptr, -1);
+      }
+
+      return current->singleLookupWithId(name);
    }
 
    std::shared_ptr<Symbol> lookup(std::string const& name) {
@@ -205,14 +234,23 @@ class SymbolTable {
       return current->lookup(name);
    }
 
+   std::pair<std::shared_ptr<Symbol>, int> lookupWithId(
+     std::string const& name) {
+      if (current == nullptr) {
+         return std::make_pair(nullptr, -1);
+      }
+
+      return current->lookupWithId(name);
+   }
+
    void reset() {
       while (current != nullptr) {
          Node* temp = current->getParent();
          delete current;
          current = temp;
       }
-      current = new Node(nullptr);
       scopes = 1;
+      current = new Node(scopes, nullptr);
    }
 };
 
