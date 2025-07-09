@@ -181,6 +181,9 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             outfile << indentation << instr.type << " " << instr.result << " = "
                     << instr.arg1 << "();\n";
             break;
+         case OpCode::TAC_VAR_DECL:
+            outfile << indentation << instr.type << " " << instr.result << ";\n";
+            break;
       }
    }
 

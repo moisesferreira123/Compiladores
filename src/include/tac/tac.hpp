@@ -47,8 +47,11 @@ enum class OpCode {
    TAC_MEMBER_ASSIGN, // result.arg1 = arg2       (para s.f = x)
 
    TAC_MEMBER_ACCESS,
-   TAC_NEW
-   
+   TAC_NEW,
+
+   /// Declaração
+   TAC_VAR_DECL
+
    // Para acesso a membros de struct, etc. (Podemos adicionar depois)
 };
 

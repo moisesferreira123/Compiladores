@@ -51,7 +51,7 @@
 %type <ok> program decl_block decl_block2 decl  
 %type <ok> var_decl procedure_decl record_decl enum_decl
 %type <ok> scope_declarations assign_stmt
-%type <type> type var_decl2 stmt stmt_list stmt_list2
+%type <type> type stmt stmt_list stmt_list2
 %type <type> return_type return_stmt return_stmt2 
 %type <type> call_stmt if_stmt if_stmt2 while_stmt 
 %type <paramfield> paramfield_decl
@@ -60,7 +60,7 @@
 %type <names_list> enum_field
 %type <types_list> call_args call_args2
 
-%type <tac_operand> exp literal var ref_var deref_var 
+%type <tac_operand> exp literal var ref_var deref_var var_decl2
 
 /// Regra inicial
 %start program
@@ -112,13 +112,35 @@
    
    var_decl:
       TOKEN_VAR NAME TOKEN_COLON type var_decl2 {
-         $$ = processVarDecl($4, $5, $2);
+         $$ = processVarDecl($4, $5->type, $2);
+
+         if ($$) {
+            std::string varName = getUniqueName($2);
+            std::string tacType = getTacType($4);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_VAR_DECL, varName));
+
+            Type* varDecl2Type = $5->type;
+            if (!isNullKind(varDecl2Type->kind)) {
+               emitter.emit(OpCode::TAC_ASSIGN, varName, $5->loc);
+            }
+         }
+
          delete $2;
          delete $4;
          delete $5;
       }
       | TOKEN_VAR NAME TOKEN_ATTRIBUTION exp {
          $$ = processVarDecl($4->type, $2);
+
+         if ($$) {
+            Type* expType = $4->type;
+            std::string varName = getUniqueName($2);
+            std::string tacType = getTacType(expType);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_VAR_DECL, varName));
+
+            emitter.emit(OpCode::TAC_ASSIGN, varName, $4->loc);
+         }
+
          delete $2;
          delete $4;
       }
@@ -126,10 +148,10 @@
    
    var_decl2: 
       TOKEN_ATTRIBUTION exp {
-         $$ = $2->type;
+         $$ = $2;
       }
       | {
-         $$ = createTypeNull();
+         $$ = new TacOperand{createTypeNull(), ""};
       }
 
    procedure_decl:
@@ -431,7 +453,8 @@
    
    var:
       NAME {
-         $$ = new TacOperand{processVar($1), std::string($1)};
+         Type* type = processVar($1);
+         $$ = new TacOperand{type, getUniqueName($1)};
          delete $1;
       }
       | exp TOKEN_DOT NAME {

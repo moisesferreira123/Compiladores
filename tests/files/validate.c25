@@ -1,0 +1,12 @@
+program validate
+begin
+   var m : int := 10;
+   procedure main()
+      begin
+         var x: int := m;
+         var y := 15;
+         var k : int := y + 6
+      in
+         x := m + k
+      end
+end
