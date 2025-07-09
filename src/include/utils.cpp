@@ -720,10 +720,8 @@ std::string getTypeStr(Type* type) {
       return "*" + getTypeStr(type->ref);
    } else if (type->kind == TYPE_STRUCT || type->kind == TYPE_ENUM
      || type->kind == TYPE_ENUM_VALUE || type->kind == TYPE_ENUM_VAR) {
-      return "sym[" + type->structured->getName() + "["
-        + std::to_string(
-          reinterpret_cast<std::uintptr_t>(type->structured.get()))
-        + "]";
+      return type->structured->getName() + "["
+        + std::to_string(type->structured->getScopeId()) + "]";
    } else {
       return "error";
    }
