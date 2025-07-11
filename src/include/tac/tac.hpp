@@ -51,6 +51,8 @@ enum class OpCode {
 
    /// Declaração
    TAC_VAR_DECL,
+   TAC_STRUCT_DECL,
+   TAC_STRUCT_DECL_CLOSE,
     // Para acesso a membros de struct, etc. (Podemos adicionar depois)
 };
 
