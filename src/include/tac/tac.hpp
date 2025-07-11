@@ -50,10 +50,7 @@ enum class OpCode {
    TAC_NEW,
 
    /// Declaração
-   TAC_VAR_DECL,
-
-    // Moisés adcionou isso:
-    TAC_STACK_POP_LABEL // result = stack_label.pop()
+   TAC_VAR_DECL
 
     // Para acesso a membros de struct, etc. (Podemos adicionar depois)
 };

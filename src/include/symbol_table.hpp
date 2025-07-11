@@ -218,6 +218,8 @@ class SymbolTable {
       scopes = 1;
       current = new Node(scopes, nullptr);
    }
+
+   int getScopes() { return scopes; }
 };
 
 #endif /// SYMBOL_TABLE_HPP

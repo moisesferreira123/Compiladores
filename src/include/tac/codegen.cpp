@@ -9,8 +9,8 @@
 
 CodeEmitter emitter;
 std::vector<std::string> label_stack;
-// std::vector<std::string> procedure_context_stack;
-std::vector<std::vector<TAC_Instruction>> procedures_stack;
+std::vector<std::string> procedure_context_stack;
+//std::vector<std::vector<TAC_Instruction>> procedures_stack;
 std::set<std::string> variables;
 
 static int count_temp = 0;
@@ -41,12 +41,13 @@ void CodeEmitter::emit(
 }
 
 void CodeEmitter::emitProcedureBegin(const std::string& procedure_name) {
-    std::string procedure_label;
-    if(procedure_name == "main") procedure_label = "main";
-    else procedure_label = new_label();
-    std::vector<TAC_Instruction> procedure_instructions;
-    procedure_instructions.push_back(TAC_Instruction(OpCode::TAC_LABEL, procedure_label));
-    procedures_stack.push_back(procedure_instructions);
+    std::string procedure_label_begin;
+    if(procedure_name == "main") procedure_label_begin = "main";
+    else procedure_label_begin = procedure_name + "_" + std::to_string(symbolTable.getScopes());
+    std::string procedure_label_end = new_label();
+    emit(OpCode::TAC_GOTO, procedure_label_end);
+    emit(OpCode::TAC_LABEL, procedure_label_begin);
+    label_stack.push_back(procedure_label_end);
 }
 
 void CodeEmitter::emitProcedureParams(std::vector<Paramfield*>* procedure_params) {
@@ -54,12 +55,15 @@ void CodeEmitter::emitProcedureParams(std::vector<Paramfield*>* procedure_params
 }
 
 void CodeEmitter::emitProcedureEnd() {
-    for(auto instr: procedures_stack.back()) {
-        emit(instr);
+    std::string temp_comp = new_temp();
+    std::string temp_sub = new_temp();
+    emit(OpCode::TAC_GT, temp_comp, "_size", "0");
+    emit(OpCode::TAC_SUB, temp_sub, "_size", "1");
+    emit(OpCode::TAC_IF_GOTO, temp_comp, "*_label_stack[" + temp_sub + "]");
+    if(!label_stack.empty()){
+        emit(OpCode::TAC_LABEL, label_stack.back());
+        label_stack.pop_back();
     }
-    procedures_stack.pop_back();
-    // Colquei essa sitring, pois foi o nome que eu dei para a variável geral que será usada para ir para outro label nas chamadas de procedures
-    emit(OpCode::TAC_STACK_POP_LABEL, "change_label");
 }
 
 void CodeEmitter::write_to_file(const std::string& filename) {
@@ -78,8 +82,8 @@ void CodeEmitter::write_to_file(const std::string& filename) {
     
 
     outfile << "\nint main() {\n";
-    outfile << "void* change_label;\n";
-
+    outfile << "void* _label_stack[2048];\n";
+    outfile << "int _size = 0;\n";
 
     for (const auto& instr : this->instructions) {
         switch(instr.op) {
@@ -87,19 +91,22 @@ void CodeEmitter::write_to_file(const std::string& filename) {
                 outfile << indentation << instr.result << " = " << instr.arg1 << ";\n";
                 break;
             case OpCode::TAC_ADD:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " + " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " + " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_SUB:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " - " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " - " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_MULT:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " * " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " * " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_DIV:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " / " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " / " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_POT: {
-                // TODO: Tem que lidar com o tipo do temp_arg1
                 std::string pot_loop = new_label();
                 std::string temp_comp = new_temp();
                 std::string temp_arg1 = new_temp();
@@ -107,40 +114,51 @@ void CodeEmitter::write_to_file(const std::string& filename) {
                 outfile << indentation << "float " << temp_arg1 << " = " << instr.arg1 << ";\n";
                 outfile << pot_loop << ":\n";
                 outfile << indentation << temp_comp << " = " << temp_comp << " + 1;\n";
-                outfile << indentation << instr.arg1 << " = " << instr.arg1 <<  " * " << temp_comp << ";\n";
+                outfile << indentation << instr.arg1 << " = " << instr.arg1 <<  " * " << temp_arg1 << ";\n";
                 outfile << indentation << "if(" << temp_comp << " < " << instr.arg2 << ") goto " << pot_loop << ";\n";
                 break;
             }
             case OpCode::TAC_UNARY_MINUS:
-                outfile << indentation << instr.result << " = -" << instr.arg1 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result
+                        << " = -" << instr.arg1 << ";\n";
                 break;
             case OpCode::TAC_EQ:
-            //TODO: Acho que tem que analisar se é um tipo enum para ver como comparar
-                outfile << indentation << instr.result << " = " << instr.arg1 << " == " << instr.arg2 << ";\n";
+                // TODO: Acho que tem que analisar se é um tipo enum para ver como
+                // comparar
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " == " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_NEQ:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " != " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " != " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_LT:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " < " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " < " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_GT:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " > " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " > " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_LE:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " <= " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " <= " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_GE:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " >= " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " >= " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_OR:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " || " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " || " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_AND:
-                outfile << indentation << instr.result << " = " << instr.arg1 << " && " << instr.arg2 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << instr.arg1 << " && " << instr.arg2 << ";\n";
                 break;
             case OpCode::TAC_NOT:
-                outfile << indentation << instr.result << " = " << "!" << instr.arg1 << ";\n";
+                outfile << indentation << instr.type << " " << instr.result << " = "
+                        << "!" << instr.arg1 << ";\n";
                 break;
             case OpCode::TAC_GOTO:
                 outfile << indentation << "goto " << instr.result << ";\n";
@@ -158,11 +176,11 @@ void CodeEmitter::write_to_file(const std::string& filename) {
                 outfile << indentation << instr.result << " = " << instr.arg1 << ";\n";
                 break;
             case OpCode::TAC_PARAM:
-            // TODO:
-            break;
-         case OpCode::TAC_CALL:
-            // TODO:
+                // TODO:
                 break;
+             case OpCode::TAC_CALL:
+                // TODO:
+                    break;
             case OpCode::TAC_RETURN:
             // TODO: Errado. Não pode ter return algo; no nosso código.
                 outfile << indentation << "return " << instr.result << ";\n";
@@ -186,7 +204,7 @@ void CodeEmitter::write_to_file(const std::string& filename) {
                 outfile << indentation << instr.type << " " << instr.result << " = "
                         << instr.arg1 << "();\n";
                 break;
-             case OpCode::TAC_VAR_DECL:
+            case OpCode::TAC_VAR_DECL:
                 outfile << indentation << instr.type << " " << instr.result << ";\n";
                 break;
         }
