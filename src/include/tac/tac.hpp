@@ -51,9 +51,15 @@ enum class OpCode {
 
    /// Declaração
    TAC_VAR_DECL,
+<<<<<<< HEAD
    // Para acesso a membros de struct, etc. (Podemos adicionar depois)
    TAC_STRUCT_DECL,
    TAC_STRUCT_DECL_CLOSE,
+=======
+   TAC_STRUCT_DECL,
+   TAC_STRUCT_DECL_CLOSE,
+    // Para acesso a membros de struct, etc. (Podemos adicionar depois)
+>>>>>>> d31d2ecb684635b3e82eb1c6c407635355855dde
 };
 
 // A estrutura que representa uma única instrução TAC.
