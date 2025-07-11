@@ -9,8 +9,8 @@
 
 CodeEmitter emitter;
 std::vector<std::string> label_stack;
-// std::vector<std::string> procedure_context_stack;
-std::vector<std::vector<TAC_Instruction>> procedures_stack;
+std::vector<std::string> procedure_context_stack;
+// std::vector<std::vector<TAC_Instruction>> procedures_stack;
 std::set<std::string> variables;
 
 static int count_temp = 0;
@@ -39,28 +39,32 @@ void CodeEmitter::emit(
      TAC_Instruction(op, std::move(result), std::move(arg1), std::move(arg2)));
 }
 
-/*void CodeEmitter::emitProcedureBegin(const std::string& procedure_name) {
-    std::string procedure_label;
-    if(procedure_name == "main") procedure_label = "main";
-    else procedure_label = new_label();
-    std::vector<TAC_Instruction> procedure_instructions;
-    procedure_instructions.push_back(TAC_Instruction(OpCode::TAC_LABEL,
-procedure_label)); procedures_stack.push_back(procedure_instructions);
+void CodeEmitter::emitProcedureBegin(const std::string& procedure_name) {
+   std::string procedure_label_begin;
+   if (procedure_name == "main")
+      procedure_label_begin = "main";
+   else
+      procedure_label_begin
+        = procedure_name + "_" + std::to_string(symbolTable.getScopes());
+   std::string procedure_label_end = new_label();
+   emit(OpCode::TAC_GOTO, procedure_label_end);
+   emit(OpCode::TAC_LABEL, procedure_label_begin);
+   label_stack.push_back(procedure_label_end);
 }
-*/
-/*void CodeEmitter::emitProcedureParams(std::vector<Paramfield*>*
-procedure_params) {
 
-}*/
+void CodeEmitter::emitProcedureParams(
+  std::vector<Paramfield*>* procedure_params) { }
 
 void CodeEmitter::emitProcedureEnd() {
-   for (auto instr : procedures_stack.back()) {
-      emit(instr);
+   std::string temp_comp = new_temp();
+   std::string temp_sub = new_temp();
+   emit(OpCode::TAC_GT, temp_comp, "_size", "0");
+   emit(OpCode::TAC_SUB, temp_sub, "_size", "1");
+   emit(OpCode::TAC_IF_GOTO, temp_comp, "*_label_stack[" + temp_sub + "]");
+   if (!label_stack.empty()) {
+      emit(OpCode::TAC_LABEL, label_stack.back());
+      label_stack.pop_back();
    }
-   procedures_stack.pop_back();
-   // Colquei essa sitring, pois foi o nome que eu dei para a variável geral que
-   // será usada para ir para outro label nas chamadas de procedures
-   emit(OpCode::TAC_STACK_POP_LABEL, "change_label");
 }
 
 void CodeEmitter::write_to_file(const std::string& filename) {
@@ -78,7 +82,8 @@ void CodeEmitter::write_to_file(const std::string& filename) {
    // Tem que fazer a tabela de símbolos enviar o tipo da variável
 
    outfile << "\nint main() {\n";
-   outfile << "void* change_label;\n";
+   outfile << "void* _label_stack[2048];\n";
+   outfile << "int _size = 0;\n";
 
    for (const auto& instr : this->instructions) {
       switch (instr.op) {
@@ -130,8 +135,8 @@ void CodeEmitter::write_to_file(const std::string& filename) {
                     << instr.arg1 << " == " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_NEQ:
-            outfile << indentation << instr.type << " " << instr.result
-                    << " = " << instr.arg1 << " != " << instr.arg2 << ";\n";
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << " != " << instr.arg2 << ";\n";
             break;
          case OpCode::TAC_LT:
             outfile << indentation << instr.type << " " << instr.result << " = "
