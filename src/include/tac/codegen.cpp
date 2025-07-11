@@ -207,7 +207,12 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             case OpCode::TAC_VAR_DECL:
                 outfile << indentation << instr.type << " " << instr.result << ";\n";
                 break;
-        }
+           case OpCode::TAC_STRUCT_DECL:
+            outfile << indentation << "struct " << instr.result << "\n";
+          case OpCode::TAC_STRUCT_DECL_CLOSE:
+            outfile << indentation << "};\n";
+
+      }
     }
 
    outfile << indentation << "return 0;\n";

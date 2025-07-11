@@ -217,13 +217,21 @@
       } TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES {
          $$ = processRecordDecl($2, $5);
 
+         std::string structName = getUniqueName($2);
+         emitter.emit(OpCode::TAC_STRUCT_DECL, structName);
+         
          delete $2;
          for (auto p : *$5) {
+            std::string varName = p->name;
+            std::string tacType = getTypeStr(p->type);
+            emitter.emit(TAC_Instruction(tacType,OpCode::TAC_VAR_DECL,varName));
             delete p;
          }
+        emitter.emit(OpCode::TAC_STRUCT_DECL_CLOSE, "");
          delete $5;
       }
       ;
+
    
    record_fields:
       paramfield_decl record_fields2 {
