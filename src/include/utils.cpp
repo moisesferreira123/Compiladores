@@ -123,7 +123,7 @@ void processProgram(bool ok) {
    if (ok) {
       Logger::info("Nenhum erro encontrado. Gerando código de máquina.");
 
-      // TODO: Gerar código intermediário
+      emitter.write_to_file("tac.c");
 
       Logger::success("Análise sintática concluída com sucesso: estrutura do "
                       "programa válida.");
@@ -931,6 +931,7 @@ std::string getUniqueName(std::string name) {
       return name + "_" + std::to_string(symbol->getScopeId());
    }
 }
+
 
 std::string getTacType(Type* type) {
    if (isPrimitiveKind(type->kind)) {

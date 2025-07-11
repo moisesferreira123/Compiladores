@@ -4,6 +4,7 @@
 /// Importações
 #include "logger.hpp"
 #include "symbol_table.hpp"
+#include "tac/codegen.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -13,6 +14,7 @@ extern int numLines;
 extern int numCols;
 extern SymbolTable symbolTable;
 extern bool program_ok;
+extern CodeEmitter emitter;
 
 /// Tipos
 enum TypeKind {

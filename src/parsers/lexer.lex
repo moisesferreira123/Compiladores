@@ -318,12 +318,7 @@ of {
 
 \"[^\\"\n\r]*\" { 
    numCols += yyleng; 
-   int len = yyleng - 2;
-   yylval.string_value = (char*) malloc(len + 1);
-   if (yylval.string_value) {
-      strncpy(yylval.string_value, yytext + 1, len);
-      yylval.string_value[len] = '\0';
-   }
+   yylval.string_value = strdup(yytext); 
    return STRING_LITERAL; 
 }
 

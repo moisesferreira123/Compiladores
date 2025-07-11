@@ -158,11 +158,11 @@
    procedure_decl:
       TOKEN_PROCEDURE NAME {
          symbolTable.enterScope();
-         emitProcedureBegin($2);
+         //emitProcedureBegin($2);
       } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          $$ = processProcedureDecl($2, $5, $7, $9, $10);
-         emitProcedureParams($5);
-         emitProcedureEnd();
+         //emitProcedureParams($5);
+         //emitProcedureEnd();
 
          delete $2;
          for (auto p : *$5) {
@@ -217,17 +217,31 @@
       } TOKEN_OPEN_BRACES record_fields TOKEN_CLOSE_BRACES {
          $$ = processRecordDecl($2, $5);
 
-         std::string structName = getUniqueName($2);
-         emitter.emit(OpCode::TAC_STRUCT_DECL, structName);
+         if ($$) {
+            emitter.emit(OpCode::TAC_STRUCT_DECL, "");
+
+            std::shared_ptr<Symbol>symbol = symbolTable.lookup($2);
+
+            if (std::shared_ptr<Struct> structSymbol = std::dynamic_pointer_cast<Struct>(symbol)) {
+               std::vector<std::shared_ptr<Variable>> const& fields = structSymbol->getFields();
+               for (auto const& var : fields) {
+                  std::string varName = var->getName() + "_" + std::to_string(var->getScopeId());
+                  Type* varType = createType(var->getType());
+                  std::string tacType = getTacType(varType);
+                  emitter.emit(TAC_Instruction(tacType, OpCode::TAC_VAR_DECL, varName));
+                  delete varType;
+               }
+            }
+
+            std::string structName = getUniqueName($2);
+            emitter.emit(OpCode::TAC_STRUCT_DECL_CLOSE, structName);
+         }
+
          
          delete $2;
          for (auto p : *$5) {
-            std::string varName = p->name;
-            std::string tacType = getTypeStr(p->type);
-            emitter.emit(TAC_Instruction(tacType,OpCode::TAC_VAR_DECL,varName));
             delete p;
          }
-        emitter.emit(OpCode::TAC_STRUCT_DECL_CLOSE, "");
          delete $5;
       }
       ;
