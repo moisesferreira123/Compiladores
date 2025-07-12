@@ -38,6 +38,8 @@ public:
 
     void emitCallStmt(const std::string& procedure_name, std::vector<TacOperand*>* call_args);
 
+    bool emitDefaultCallStmt(const std::string& procedure_name, std::vector<TacOperand*>* call_args);
+
     // Escreve o código C final no arquivo.
     void write_to_file(const std::string& filename);
 };

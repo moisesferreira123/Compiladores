@@ -77,7 +77,6 @@
          $$ = $5;
          program_ok = $$;
          processProgram($$);
-         if($$) emitter.write_to_file("tac.c");
       }
       ;
 
@@ -159,8 +158,8 @@
 
    procedure_decl:
       TOKEN_PROCEDURE NAME {
-         symbolTable.enterScope();
          emitter.emitProcedureBegin($2);
+         symbolTable.enterScope();
       } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          $$ = processProcedureDecl($2, $5, $7, $9, $10);
          emitter.emitProcedureEnd();

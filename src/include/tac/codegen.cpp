@@ -51,9 +51,10 @@ void CodeEmitter::emitProcedureBegin(const std::string& procedure_name) {
 
 void CodeEmitter::emitProcedureParams(
   std::vector<Paramfield*>* procedure_params) {
-   for(auto param: *procedure_params) {
+   for (auto param : *procedure_params) {
       std::string tacType = getTacType(param->type);
-      std::string global_param = "_param_" + param->name +  "_" + std::to_string(symbolTable.getScopes());
+      std::string global_param
+        = param->name + "_" + std::to_string(symbolTable.getScopes());
       emit(TAC_Instruction(tacType, OpCode::TAC_PARAM, global_param));
    }
 }
@@ -69,18 +70,79 @@ void CodeEmitter::emitProcedureEnd() {
    }
 }
 
-void CodeEmitter::emitCallStmt(const std::string& procedure_name, 
-   std::vector<TacOperand*>* call_args) {
+bool CodeEmitter::emitDefaultCallStmt(
+  const std::string& procedure_name, std::vector<TacOperand*>* call_args) {
    auto procedure_symbol = symbolTable.lookup(procedure_name);
-   if(auto procedure = std::dynamic_pointer_cast<Procedure>(procedure_symbol)) {
+
+   if (procedure_symbol == nullptr) {
+      return false;
+   }
+
+   std::string procedure_label = procedure_symbol->getName() + "_"
+     + std::to_string(procedure_symbol->getScopeId());
+
+   std::string defaultFunctions[] = { "readint_1",
+      "readfloat_1",
+      "readchar_1",
+      "readstring_1",
+      "readline_1",
+      "printint_1",
+      "printfloat_1",
+      "printstr_1",
+      "printline_1" };
+
+   for (int i = 0; i < 9; i++) {
+      if (procedure_label == defaultFunctions[i]) {
+         if (auto procedure
+           = std::dynamic_pointer_cast<Procedure>(procedure_symbol)) {
+            emit(OpCode::TAC_DEFAULT_CALL, procedure_label);
+
+            for (int i { 0 }; i < call_args->size(); i++) {
+               if (i == 0) {
+                  emit(OpCode::TAC_DEFAULT_FPARAM, call_args->at(i)->loc);
+               } else {
+                  emit(OpCode::TAC_DEFAULT_PARAM, call_args->at(i)->loc);
+               }
+            }
+
+            emit(OpCode::TAC_DEFAULT_CALL_END, "");
+
+            return true;
+         }
+
+         break;
+      }
+   }
+
+   return false;
+}
+
+void CodeEmitter::emitCallStmt(
+  const std::string& procedure_name, std::vector<TacOperand*>* call_args) {
+   if (emitDefaultCallStmt(procedure_name, call_args)) {
+      return;
+   }
+
+   auto procedure_symbol = symbolTable.lookup(procedure_name);
+
+   if (procedure_symbol == nullptr) {
+      return;
+   }
+
+   if (auto procedure
+     = std::dynamic_pointer_cast<Procedure>(procedure_symbol)) {
       auto params = procedure->getParams();
-      for(int i{0}; i<call_args->size(); i++) {
-         std::string param_name = "_param_" + params.at(i)->getName() + "_" + std::to_string(params.at(i)->getScopeId());
+
+      for (int i { 0 }; i < call_args->size(); i++) {
+         std::string param_name = params.at(i)->getName() + "_"
+           + std::to_string(params.at(i)->getScopeId());
          std::string arg_name = call_args->at(i)->loc;
          emit(OpCode::TAC_ASSIGN, param_name, arg_name);
       }
    }
-   std::string procedure_label = procedure_name + "_" + std::to_string(procedure_symbol->getScopeId());
+
+   std::string procedure_label
+     = procedure_name + "_" + std::to_string(procedure_symbol->getScopeId());
    std::string return_label = new_label();
    emit(OpCode::TAC_INSERT_LABEL_STACK, return_label);
    emit(OpCode::TAC_ADD, "_size", "_size", "1");
@@ -103,6 +165,7 @@ void CodeEmitter::write_to_file(const std::string& filename) {
    // Tem que fazer a tabela de símbolos enviar o tipo da variável
 
    outfile << "#include <stdbool.h>\n";
+   outfile << "#include \"iosystem.h\"\n";
    outfile << "\nint main() {\n";
    outfile << "void* _label_stack[2048];\n";
    outfile << "int _size = 0;\n";
@@ -207,10 +270,12 @@ void CodeEmitter::write_to_file(const std::string& filename) {
                     << ";\n";
             break;
          case OpCode::TAC_PARAM:
-            outfile << indentation << instr.type << " " << instr.result << ";\n";
+            outfile << indentation << instr.type << " " << instr.result
+                    << ";\n";
             break;
          case OpCode::TAC_INSERT_LABEL_STACK:
-            outfile << indentation << "_label_stack[_size] = &&" <<  instr.result << ";\n";
+            outfile << indentation << "_label_stack[_size] = &&" << instr.result
+                    << ";\n";
             break;
          case OpCode::TAC_RETURN:
             // TODO: Errado. Não pode ter return algo; no nosso código.
@@ -247,6 +312,18 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             break;
          case OpCode::TAC_STRUCT_DECL_CLOSE:
             outfile << indentation << "} " << instr.result << ";\n";
+            break;
+         case OpCode::TAC_DEFAULT_CALL:
+            outfile << indentation << instr.result << "(";
+            break;
+         case OpCode::TAC_DEFAULT_FPARAM:
+            outfile << "" << instr.result;
+            break;
+         case OpCode::TAC_DEFAULT_PARAM:
+            outfile << ", " << instr.result;
+            break;
+         case OpCode::TAC_DEFAULT_CALL_END:
+            outfile << ");\n";
             break;
       }
    }

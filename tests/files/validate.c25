@@ -8,6 +8,11 @@ begin
          var k := y + 6
       in
          x := x + m;
-         y := k - y
+         y := k - y;
+         printstr("Os valores obtidos foram: y = ");
+         printfloat(y);
+         printstr(", x = ");
+         printint(x);
+         printline("")
       end
 end
