@@ -1,0 +1,19 @@
+program validate3
+begin
+   procedure add(a: int, b: int): int
+   begin
+      return a + b
+   end;
+   procedure main()
+      begin
+         var x: int;
+         var y: int;
+         var z: int
+      in
+         x := readint();
+         y := readint();
+         z := add(x, y);
+         printstr("O valor da soma é: ");
+         printint(z)
+      end
+end
