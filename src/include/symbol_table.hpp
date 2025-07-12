@@ -163,7 +163,9 @@ class SymbolTable {
    int scopes;
 
    public:
-   SymbolTable() : current(new Node(1, nullptr)), scopes(1) { }
+   SymbolTable() : current(new Node(1, nullptr)), scopes(1) {
+      insertBaseFunctions();
+   }
 
    ~SymbolTable() {
       while (current != nullptr) {
@@ -217,9 +219,12 @@ class SymbolTable {
       }
       scopes = 1;
       current = new Node(scopes, nullptr);
+      insertBaseFunctions();
    }
 
    int getScopes() { return scopes; }
+
+   void insertBaseFunctions();
 };
 
 #endif /// SYMBOL_TABLE_HPP
