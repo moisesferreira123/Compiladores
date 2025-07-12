@@ -53,6 +53,8 @@ enum class OpCode {
    TAC_VAR_DECL,
    TAC_STRUCT_DECL,
    TAC_STRUCT_DECL_CLOSE,
+
+   TAC_INSERT_LABEL_STACK // _label_stack[_size] = &&result
     // Para acesso a membros de struct, etc. (Podemos adicionar depois)
 };
 

@@ -5,6 +5,7 @@
 
 #include <string>
 #include "tac.hpp" 
+#include "../utils.hpp"
 
 
 // Gera um novo nome de variável temporária (ex: "_t0", "_t1", "_t2", ...)
@@ -29,11 +30,13 @@ public:
     // Uma sobrecarga (helper) para facilitar a vida. Cria e adiciona a instrução em um só passo.
     void emit(OpCode op, std::string result, std::string arg1 = "", std::string arg2 = "");
 
-    ///void emitProcedureBegin(const std::string& procedure_name);
+    void emitProcedureBegin(const std::string& procedure_name);
     
-    ///void emitProcedureParams(std::vector<Paramfield*>* procedure_params);
+    void emitProcedureParams(std::vector<Paramfield*>* procedure_params);
     
     void emitProcedureEnd();
+
+    void emitCallStmt(const std::string& procedure_name, std::vector<TacOperand*>* call_args);
 
     // Escreve o código C final no arquivo.
     void write_to_file(const std::string& filename);

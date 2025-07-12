@@ -18,6 +18,7 @@
    bool ok;
    Type* type;
    TacOperand* tac_operand; // Antigo ExpResult
+   std::vector<TacOperand*>* tac_operand_list;
    Paramfield* paramfield;
    std::vector<Paramfield*>* paramfield_list;
    std::vector<Type*>* types_list;
@@ -60,9 +61,9 @@
 %type <paramfield_list> procedure_params procedure_params2 
 %type <paramfield_list> record_fields record_fields2
 %type <names_list> enum_field
-%type <types_list> call_args call_args2
+%type <tac_operand_list> call_args call_args2
 
-%type <tac_operand> exp literal var ref_var deref_var var_decl2
+%type <tac_operand>  exp literal var ref_var deref_var var_decl2
 
 /// Regra inicial
 %start program
@@ -76,6 +77,7 @@
          $$ = $5;
          program_ok = $$;
          processProgram($$);
+         if($$) emitter.write_to_file("tac.c");
       }
       ;
 
@@ -158,11 +160,10 @@
    procedure_decl:
       TOKEN_PROCEDURE NAME {
          symbolTable.enterScope();
-         //emitProcedureBegin($2);
+         emitter.emitProcedureBegin($2);
       } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          $$ = processProcedureDecl($2, $5, $7, $9, $10);
-         //emitProcedureParams($5);
-         //emitProcedureEnd();
+         emitter.emitProcedureEnd();
 
          delete $2;
          for (auto p : *$5) {
@@ -177,6 +178,7 @@
       paramfield_decl procedure_params2 {
          $2->insert($2->begin(), $1);
          $$ = $2;
+         emitter.emitProcedureParams($$);
       }
       | {
          $$ = new std::vector<Paramfield*>();
@@ -435,6 +437,7 @@
    call_stmt:
       NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS {
          $$ = processCallStmt($1, $3);
+         emitter.emitCallStmt($1, $3);
 
          delete $1;
          for (auto arg : *$3) {
@@ -446,19 +449,19 @@
    
    call_args: 
       exp call_args2 {
-         $$ = processCallArgs($1->type, $2);
+         $$ = processCallArgs($1, $2);
       }
       | {
-         $$ = new std::vector<Type*>();
+         $$ = new std::vector<TacOperand*>();
       }
       ;
    
    call_args2:
       TOKEN_COMMA exp call_args2 {
-         $$ = processCallArgs($2->type, $3);
+         $$ = processCallArgs($2, $3);
       }
       | {
-         $$ = new std::vector<Type*>();
+         $$ = new std::vector<TacOperand*>();
       }
       ;
 

@@ -123,7 +123,7 @@ void processProgram(bool ok) {
    if (ok) {
       Logger::info("Nenhum erro encontrado. Gerando código de máquina.");
 
-      emitter.write_to_file("tac.c");
+      // emitter.write_to_file("tac.c");
 
       Logger::success("Análise sintática concluída com sucesso: estrutura do "
                       "programa válida.");
@@ -411,8 +411,8 @@ Type* processWhileStmt(Type* exp, Type* stmt_list) {
    }
 }
 
-std::vector<Type*>* processCallArgs(Type* exp, std::vector<Type*>* call_args) {
-   if (isErrorType(exp)) {
+std::vector<TacOperand*>* processCallArgs(TacOperand* exp, std::vector<TacOperand*>* call_args) {
+   if (isErrorType(exp->type)) {
       argumentNotValidError();
       return call_args;
    } else {
@@ -421,7 +421,7 @@ std::vector<Type*>* processCallArgs(Type* exp, std::vector<Type*>* call_args) {
    }
 }
 
-Type* processCallStmt(char* name, std::vector<Type*>* call_args) {
+Type* processCallStmt(char* name, std::vector<TacOperand*>* call_args) {
    std::shared_ptr<Symbol> symbol = symbolTable.lookup(name);
 
    if (symbol == nullptr) {
@@ -439,7 +439,7 @@ Type* processCallStmt(char* name, std::vector<Type*>* call_args) {
 
       for (int i = 0; i < argumentsCount; i++) {
          Type* argumentType = createType(params[i]->getType());
-         Type* callArgType = call_args->at(i);
+         Type* callArgType = call_args->at(i)->type;
 
          if (!isAssignable(argumentType, callArgType)) {
             argumentTypeError(i, argumentType, callArgType);

@@ -4,7 +4,7 @@
 /// Importações
 #include "logger.hpp"
 #include "symbol_table.hpp"
-#include "tac/codegen.hpp"
+// #include "tac/codegen.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -14,7 +14,7 @@ extern int numLines;
 extern int numCols;
 extern SymbolTable symbolTable;
 extern bool program_ok;
-extern CodeEmitter emitter;
+// extern CodeEmitter emitter;
 
 /// Tipos
 enum TypeKind {
@@ -89,8 +89,8 @@ Type* processAssignStmtToStmt(bool assign_stmt);
 Type* processCallStmtToStmt(Type* call_stmt);
 Type* processIfStmt(Type* exp, Type* stmt_list, Type* if_stmt2);
 Type* processWhileStmt(Type* exp, Type* stmt_list);
-std::vector<Type*>* processCallArgs(Type* exp, std::vector<Type*>* call_args);
-Type* processCallStmt(char* name, std::vector<Type*>* call_args);
+std::vector<TacOperand*>* processCallArgs(TacOperand* exp, std::vector<TacOperand*>* call_args);
+Type* processCallStmt(char* name, std::vector<TacOperand*>* call_args);
 Type* processTypeName(char* name);
 Type* processExp(Type* exp1, std::string op, Type* exp2);
 Type* processExp(std::string op, Type* exp1);
