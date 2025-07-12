@@ -39,16 +39,14 @@ void CodeEmitter::emit(
 }
 
 void CodeEmitter::emitProcedureBegin(const std::string& procedure_name) {
-   std::string procedure_label_begin;
-   if (procedure_name == "main")
-      procedure_label_begin = "main";
-   else
-      procedure_label_begin
+   if (procedure_name != "main") {
+      std::string procedure_label_begin
         = procedure_name + "_" + std::to_string(symbolTable.getScopes());
-   std::string procedure_label_end = new_label();
-   emit(OpCode::TAC_GOTO, procedure_label_end);
-   emit(OpCode::TAC_LABEL, procedure_label_begin);
-   label_stack.push_back(procedure_label_end);
+      emit(OpCode::TAC_LABEL, procedure_label_begin);
+      std::string procedure_label_end = new_label();
+      emit(OpCode::TAC_GOTO, procedure_label_end);
+      label_stack.push_back(procedure_label_end);
+   }
 }
 
 void CodeEmitter::emitProcedureParams(
@@ -63,8 +61,8 @@ void CodeEmitter::emitProcedureParams(
 void CodeEmitter::emitProcedureEnd() {
    std::string temp_comp = new_temp();
    emit(OpCode::TAC_SUB, "_size", "_size", "1");
-   emit(OpCode::TAC_GE, temp_comp, "_size", "0");
-   emit(OpCode::TAC_IF_GOTO, temp_comp, "*_label_stack[_size]");
+   emit(TAC_Instruction("bool", OpCode::TAC_GE, temp_comp, "_size", "0"));
+   emit(OpCode::TAC_IF_GOTO, "*_label_stack[_size]", temp_comp);
    if (!label_stack.empty()) {
       emit(OpCode::TAC_LABEL, label_stack.back());
       label_stack.pop_back();
