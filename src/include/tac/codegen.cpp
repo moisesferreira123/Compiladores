@@ -148,8 +148,8 @@ void CodeEmitter::emitCallStmt(const std::string& procedure_name,
       return;
    }
 
-   if (auto procedure
-     = std::dynamic_pointer_cast<Procedure>(procedure_symbol)) {
+   std::shared_ptr<Procedure> procedure;
+   if (procedure = std::dynamic_pointer_cast<Procedure>(procedure_symbol)) {
       auto params = procedure->getParams();
 
       for (int i { 0 }; i < call_args->size(); i++) {
@@ -167,6 +167,18 @@ void CodeEmitter::emitCallStmt(const std::string& procedure_name,
    emit(OpCode::TAC_ADD, "_size", "_size", "1");
    emit(OpCode::TAC_GOTO, procedure_label);
    emit(OpCode::TAC_LABEL, return_label);
+
+   /// BUG: getScopeId() pega o escopo onde o procedimento está, mas não o do
+   /// return.
+   std::string return_str
+     = "_return_" + std::to_string(procedure_symbol->getScopeId());
+
+   Type* type = createType(procedure->getType());
+   if (!isVoidKind(type->kind)) {
+      std::string tacType = getTacType(type);
+      emit(TAC_Instruction(tacType, OpCode::TAC_ASSIGN, return_str, temp));
+   }
+   delete type;
 }
 
 void CodeEmitter::write_to_file(const std::string& filename) {
