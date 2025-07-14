@@ -451,8 +451,10 @@ TacOperand* processCallStmt(char* name, std::vector<TacOperand*>* call_args) {
          }
       }
 
+      std::string tmp_name = name;
+
       return new TacOperand { createType(procedure->getType()),
-         "_return_" + std::to_string(procedure->getScopeId()) };
+         "_return_" + tmp_name };
    } else {
       expectedProcedureError(name);
       return new TacOperand { createTypeError(), "" };
@@ -936,6 +938,9 @@ std::string getUniqueName(std::string name) {
 
 std::string getTacType(Type* type) {
    if (isPrimitiveKind(type->kind)) {
+      if(type->kind == TYPE_STRING) {
+         return "char*";
+      }
       return getTypeStr(type);
    } else if (type->kind == TYPE_STRUCT) {
       int index = type->structured->getScopeId();

@@ -756,6 +756,7 @@
 
          if (!isErrorType(type) && !isVoidKind(type->kind)) {
             std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_VAR_DECL, temp));
             emitter.emit(TAC_Instruction(tacType, OpCode::TAC_ASSIGN, temp, $1->loc));
          }
 
