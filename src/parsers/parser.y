@@ -441,7 +441,8 @@
    call_stmt:
       NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS {
          $$ = processCallStmt($1, $3);
-         emitter.emitCallStmt($1, $3);
+         $$->loc = new_temp();
+         emitter.emitCallStmt($1, $3, $$->loc);
 
          delete $1;
          for (auto arg : *$3) {

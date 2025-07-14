@@ -38,6 +38,8 @@ enum class OpCode {
    TAC_PARAM, // Declara um parâmetro para a próxima chamada
    TAC_CALL, // result = call arg1 (arg1 é o nome da função)
    TAC_RETURN, // return result
+   TAC_DEFAULT_CALL_ASSIGN,
+   TAC_CALL_ASSIGN,
    TAC_DEFAULT_CALL,
    TAC_DEFAULT_FPARAM,
    TAC_DEFAULT_PARAM,
