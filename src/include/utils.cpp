@@ -411,7 +411,8 @@ Type* processWhileStmt(Type* exp, Type* stmt_list) {
    }
 }
 
-std::vector<TacOperand*>* processCallArgs(TacOperand* exp, std::vector<TacOperand*>* call_args) {
+std::vector<TacOperand*>* processCallArgs(
+  TacOperand* exp, std::vector<TacOperand*>* call_args) {
    if (isErrorType(exp->type)) {
       argumentNotValidError();
       return call_args;
@@ -421,12 +422,12 @@ std::vector<TacOperand*>* processCallArgs(TacOperand* exp, std::vector<TacOperan
    }
 }
 
-Type* processCallStmt(char* name, std::vector<TacOperand*>* call_args) {
+TacOperand* processCallStmt(char* name, std::vector<TacOperand*>* call_args) {
    std::shared_ptr<Symbol> symbol = symbolTable.lookup(name);
 
    if (symbol == nullptr) {
       procedureNotDeclaredError(name);
-      return createTypeError();
+      return new TacOperand { createTypeError(), "" };
    } else if (auto procedure = std::dynamic_pointer_cast<Procedure>(symbol)) {
       std::vector<std::shared_ptr<Variable>> params = procedure->getParams();
       int argumentsCount = params.size();
@@ -434,7 +435,7 @@ Type* processCallStmt(char* name, std::vector<TacOperand*>* call_args) {
       if (argumentsCount != call_args->size()) {
          argumentSizeError(argumentsCount, call_args->size());
 
-         return createTypeError();
+         return new TacOperand { createTypeError(), "" };
       }
 
       for (int i = 0; i < argumentsCount; i++) {
@@ -444,16 +445,17 @@ Type* processCallStmt(char* name, std::vector<TacOperand*>* call_args) {
          if (!isAssignable(argumentType, callArgType)) {
             argumentTypeError(i, argumentType, callArgType);
             delete argumentType;
-            return createTypeError();
+            return new TacOperand { createTypeError(), "" };
          } else {
             delete argumentType;
          }
       }
 
-      return createType(procedure->getType());
+      return new TacOperand { createType(procedure->getType()),
+         "_return_" + std::to_string(procedure->getScopeId()) };
    } else {
       expectedProcedureError(name);
-      return createTypeError();
+      return new TacOperand { createTypeError(), "" };
    }
 }
 
@@ -931,7 +933,6 @@ std::string getUniqueName(std::string name) {
       return name + "_" + std::to_string(symbol->getScopeId());
    }
 }
-
 
 std::string getTacType(Type* type) {
    if (isPrimitiveKind(type->kind)) {

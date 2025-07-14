@@ -1,0 +1,28 @@
+program validate4
+begin
+   procedure main()
+      begin
+         var x: int := 50;
+         var y: int := 20;
+         var z: int := 30;
+         var k: int := 40
+      in
+         if x < y then
+            if x < z then
+               if x < k then
+                  printint(1)
+               fi
+            else
+               printint(2)
+            fi
+         else
+            if y < k then
+               if y > z then
+                  printint(4)
+               else 
+                  printint(5)
+               fi
+            fi
+         fi
+      end
+end

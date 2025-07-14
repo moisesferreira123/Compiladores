@@ -17,13 +17,23 @@ begin
     in
       x := 42; y := 84;
       if x = y then
-        x := -x + y
+        x := x + y
       else 
-        x := x/y;
-        x := x*y
+        x := x*x
       fi;
       xr := ref(x);
       yr := ref(y);
-      swap(xr,yr)
+      printstr("(ANTES) O valor de X é: ");
+      printint(x);
+      printline("");
+      printstr("(ANTES) O valor de Y é: ");
+      printint(y);
+      swap(xr, yr);
+      printline("");
+      printstr("(ANTES) O valor de X é: ");
+      printint(x);
+      printline("");
+      printstr("(ANTES) O valor de Y é: ");
+      printint(y)
     end
 end

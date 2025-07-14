@@ -2,7 +2,15 @@ program validate3
 begin
    procedure add(a: int, b: int): int
    begin
-      return a + b
+      if a <= b then
+         if a = b then
+            return a * b
+         else
+            return b - a
+         fi
+      else
+         return a + b
+      fi
    end;
    procedure main()
       begin

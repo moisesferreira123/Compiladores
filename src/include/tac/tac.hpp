@@ -58,8 +58,13 @@ enum class OpCode {
    TAC_STRUCT_DECL,
    TAC_STRUCT_DECL_CLOSE,
 
+   TAC_RETURN_VOID,
+   TAC_PROCEDURE_RETURN,
+   TAC_RETURN_VALUE,
+
    TAC_INSERT_LABEL_STACK // _label_stack[_size] = &&result
-    // Para acesso a membros de struct, etc. (Podemos adicionar depois)
+                          // Para acesso a membros de struct, etc. (Podemos
+                          // adicionar depois)
 };
 
 // A estrutura que representa uma única instrução TAC.

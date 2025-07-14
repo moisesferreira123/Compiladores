@@ -89,8 +89,9 @@ Type* processAssignStmtToStmt(bool assign_stmt);
 Type* processCallStmtToStmt(Type* call_stmt);
 Type* processIfStmt(Type* exp, Type* stmt_list, Type* if_stmt2);
 Type* processWhileStmt(Type* exp, Type* stmt_list);
-std::vector<TacOperand*>* processCallArgs(TacOperand* exp, std::vector<TacOperand*>* call_args);
-Type* processCallStmt(char* name, std::vector<TacOperand*>* call_args);
+std::vector<TacOperand*>* processCallArgs(
+  TacOperand* exp, std::vector<TacOperand*>* call_args);
+TacOperand* processCallStmt(char* name, std::vector<TacOperand*>* call_args);
 Type* processTypeName(char* name);
 Type* processExp(Type* exp1, std::string op, Type* exp2);
 Type* processExp(std::string op, Type* exp1);

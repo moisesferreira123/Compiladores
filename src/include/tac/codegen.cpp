@@ -42,9 +42,9 @@ void CodeEmitter::emitProcedureBegin(const std::string& procedure_name) {
    if (procedure_name != "main") {
       std::string procedure_label_begin
         = procedure_name + "_" + std::to_string(symbolTable.getScopes());
-      emit(OpCode::TAC_LABEL, procedure_label_begin);
       std::string procedure_label_end = new_label();
       emit(OpCode::TAC_GOTO, procedure_label_end);
+      emit(OpCode::TAC_LABEL, procedure_label_begin);
       label_stack.push_back(procedure_label_end);
    }
 }
@@ -282,15 +282,15 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             outfile << indentation << "return " << instr.result << ";\n";
             break;
          case OpCode::TAC_REF:
-            outfile << indentation << instr.result << " = &" << instr.arg1
-                    << ";\n";
+            outfile << indentation << instr.type << " " << instr.result
+                    << " = &" << instr.arg1 << ";\n";
             break;
          case OpCode::TAC_DEREF:
-            outfile << indentation << instr.result << " = *" << instr.arg1
-                    << ";\n";
+            outfile << indentation << instr.type << " " << instr.result
+                    << " = *" << instr.arg1 << ";\n";
             break;
          case OpCode::TAC_DEREF_ASSIGN:
-            outfile << indentation << instr.result << "* = &" << instr.arg1
+            outfile << indentation << instr.result << " = " << instr.arg1
                     << ";\n";
             break;
          case OpCode::TAC_MEMBER_READ:
@@ -324,6 +324,19 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             break;
          case OpCode::TAC_DEFAULT_CALL_END:
             outfile << ");\n";
+            break;
+         case OpCode::TAC_RETURN_VOID:
+            emitProcedureEnd();
+            break;
+         case OpCode::TAC_RETURN_VALUE:
+            outfile << indentation << "_return_" << instr.arg1 << " = "
+                    << instr.result << ";\n";
+            emitProcedureEnd();
+            break;
+         case OpCode::TAC_PROCEDURE_RETURN:
+            outfile << indentation << instr.result << " _return_" << instr.arg1
+                    << ";\n";
+            emitProcedureEnd();
             break;
       }
    }

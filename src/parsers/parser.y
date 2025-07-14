@@ -55,8 +55,8 @@
 %type <ok> var_decl procedure_decl record_decl enum_decl
 %type <ok> scope_declarations assign_stmt
 %type <type> type stmt stmt_list stmt_list2
-%type <type> return_type return_stmt return_stmt2 
-%type <type> call_stmt if_stmt if_stmt2 while_stmt 
+%type <type> return_type return_stmt  
+%type <type> if_stmt if_stmt2 while_stmt 
 %type <paramfield> paramfield_decl
 %type <paramfield_list> procedure_params procedure_params2 
 %type <paramfield_list> record_fields record_fields2
@@ -64,6 +64,7 @@
 %type <tac_operand_list> call_args call_args2
 
 %type <tac_operand>  exp literal var ref_var deref_var var_decl2
+%type <tac_operand> call_stmt return_stmt2
 
 /// Regra inicial
 %start program
@@ -160,8 +161,12 @@
       TOKEN_PROCEDURE NAME {
          emitter.emitProcedureBegin($2);
          symbolTable.enterScope();
-      } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
-         $$ = processProcedureDecl($2, $5, $7, $9, $10);
+      } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type {
+         if (!isErrorType($7) && !isVoidKind($7->kind)) {
+            emitter.emit(OpCode::TAC_PROCEDURE_RETURN, getTacType($7), std::to_string(symbolTable.getScopes()));
+         }
+      } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
+         $$ = processProcedureDecl($2, $5, $7, $10, $11);
          emitter.emitProcedureEnd();
 
          delete $2;
@@ -170,7 +175,7 @@
          }
          delete $5;
          delete $7;
-         delete $10;
+         delete $11;
       }
 
    procedure_params:
@@ -332,7 +337,7 @@
          $$ = $1;
       }
       | call_stmt {
-         $$ = processCallStmtToStmt($1);
+         $$ = processCallStmtToStmt($1->type);
          delete $1;
       }
       | return_stmt {
@@ -356,7 +361,7 @@
          bool ok = processAssignStmt($1->type, $3->type);
 
          if(ok){
-            emitter.emit(OpCode::TAC_DEREF_ASSIGN, "", $1->loc, $3->loc);
+            emitter.emit(OpCode::TAC_DEREF_ASSIGN, $1->loc, $3->loc);
          }
 
          $$ = ok;
@@ -432,7 +437,7 @@
 
       } 
       ;
-   /// TODO: Temos que verificar se a função tem retorno void ou não, se não for void, devemos definir uma variável aleatória para ela. call_stmt será um TacOperand e o exp deve pegar esse TacOperand.
+
    call_stmt:
       NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS {
          $$ = processCallStmt($1, $3);
@@ -466,16 +471,23 @@
 
    return_stmt:
       TOKEN_RETURN return_stmt2 {
-         $$ = $2;
+         Type* type = $2->type;
+         if (!isErrorType(type) && !isVoidKind(type->kind)) {
+            emitter.emit(OpCode::TAC_RETURN_VALUE, $2->loc, std::to_string(symbolTable.getScopes()));
+         } else if (isVoidKind(type->kind)) {
+            emitter.emit(OpCode::TAC_RETURN_VOID, "");
+         }
+
+         $$ = type;
       }
       ;
 
    return_stmt2:
       exp {
-         $$ = $1->type;
+         $$ = $1;
       }
       | {
-         $$ = createTypeVoid();
+         $$ = new TacOperand{createTypeVoid(), ""};
       }
       ;
    
@@ -524,13 +536,10 @@
    ref_var: 
       TOKEN_REF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
          Type* pointer_type = createType($3->type);
-         std::string temp = new_temp();
 
-         if(!isErrorType(pointer_type)){
-            emitter.emit(OpCode::TAC_REF, temp, $3->loc);
-         }
+         std::string loc = "&" + $3->loc;
 
-         $$ = new TacOperand{pointer_type, $3->loc};
+         $$ = new TacOperand{pointer_type, loc};
          delete $3;
       }
       ;
@@ -539,27 +548,19 @@
    deref_var:
       TOKEN_DEREF TOKEN_OPEN_PARENTHESIS var TOKEN_CLOSE_PARENTHESIS {
          Type* type = processDerefVar($3->type);
-         std::string temp = new_temp();
+         std::string loc = "*" + $3->loc;
 
-         if(!isErrorType(type)){
-            emitter.emit(OpCode::TAC_DEREF, temp, $3->loc);
-         }
-
-         $$ = new TacOperand{type, temp};
+         $$ = new TacOperand{type, loc};
          delete $3;
       }
       | TOKEN_DEREF TOKEN_OPEN_PARENTHESIS deref_var TOKEN_CLOSE_PARENTHESIS {
          $$ = new TacOperand{processDerefVar($3->type), $3->loc};
          delete $3;
+         std::string loc = "*" + $3->loc;
 
          Type* type = processDerefVar($3->type);
-         std::string temp = new_temp();
 
-         if(!isErrorType(type)){
-            emitter.emit(OpCode::TAC_DEREF, temp, $3->loc);
-         }
-
-         $$ = new TacOperand{type, temp};
+         $$ = new TacOperand{type, loc};
          delete $3;
       }
       ;
@@ -750,7 +751,16 @@
          $$ = $1;
       }
       | call_stmt {
-         $$ = new TacOperand{$1, ""};
+         Type* type = $1->type;
+         std::string temp = new_temp();
+
+         if (!isErrorType(type) && !isVoidKind(type->kind)) {
+            std::string tacType = getTacType(type);
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_ASSIGN, temp, $1->loc));
+         }
+
+         $$ = new TacOperand{type, temp};
+         delete $1;
       }
       | var {
          $$ = $1;
