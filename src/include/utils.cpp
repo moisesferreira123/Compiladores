@@ -451,10 +451,8 @@ TacOperand* processCallStmt(char* name, std::vector<TacOperand*>* call_args) {
          }
       }
 
-      std::string tmp_name = name;
-
       return new TacOperand { createType(procedure->getType()),
-         "_return_" + tmp_name };
+         "_return_" + std::to_string(procedure->getScopeId()) };
    } else {
       expectedProcedureError(name);
       return new TacOperand { createTypeError(), "" };
