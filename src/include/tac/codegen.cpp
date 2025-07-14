@@ -60,6 +60,8 @@ void CodeEmitter::emitProcedureParams(
 }
 
 void CodeEmitter::emitProcedureEnd() {
+   std::string end_label = "_L_end" + std::to_string(symbolTable.getScopes());
+   emit(OpCode::TAC_LABEL, end_label);
    std::string temp_comp = new_temp();
    emit(OpCode::TAC_SUB, "_size", "_size", "1");
    emit(TAC_Instruction("bool", OpCode::TAC_GE, temp_comp, "_size", "0"));
@@ -70,8 +72,13 @@ void CodeEmitter::emitProcedureEnd() {
    }
 }
 
-bool CodeEmitter::emitDefaultCallStmt(
-  const std::string& procedure_name, std::vector<TacOperand*>* call_args) {
+void CodeEmitter::emitProcedureReturn() {
+   std::string end_label = "_L_end" + std::to_string(symbolTable.getScopes());
+   emit(OpCode::TAC_GOTO, end_label);
+}
+
+bool CodeEmitter::emitDefaultCallStmt(const std::string& procedure_name,
+  std::vector<TacOperand*>* call_args, std::string temp) {
    auto procedure_symbol = symbolTable.lookup(procedure_name);
 
    if (procedure_symbol == nullptr) {
@@ -81,18 +88,30 @@ bool CodeEmitter::emitDefaultCallStmt(
    std::string procedure_label = procedure_symbol->getName() + "_"
      + std::to_string(procedure_symbol->getScopeId());
 
-   std::string defaultFunctions[] = { "readint_1",
-      "readfloat_1",
-      "readchar_1",
-      "readstring_1",
-      "readline_1",
-      "printint_1",
-      "printfloat_1",
-      "printstr_1",
-      "printline_1" };
+   std::string readFunctions[] = {
+      "readint_1", "readfloat_1", "readchar_1", "readstring_1", "readline_1"
+   };
 
-   for (int i = 0; i < 9; i++) {
-      if (procedure_label == defaultFunctions[i]) {
+   for (int i = 0; i < 5; i++) {
+      if (procedure_label == readFunctions[i]) {
+         if (auto procedure
+           = std::dynamic_pointer_cast<Procedure>(procedure_symbol)) {
+            Type* t = createType(procedure->getType());
+            std::string tacType = getTacType(t);
+            emit(TAC_Instruction(
+              tacType, OpCode::TAC_DEFAULT_CALL_ASSIGN, temp, procedure_label));
+            delete t;
+            return true;
+         }
+
+         break;
+      }
+   }
+   std::string printFunctions[]
+     = { "printint_1", "printfloat_1", "printstr_1", "printline_1" };
+
+   for (int i = 0; i < 4; i++) {
+      if (procedure_label == printFunctions[i]) {
          if (auto procedure
            = std::dynamic_pointer_cast<Procedure>(procedure_symbol)) {
             emit(OpCode::TAC_DEFAULT_CALL, procedure_label);
@@ -117,9 +136,9 @@ bool CodeEmitter::emitDefaultCallStmt(
    return false;
 }
 
-void CodeEmitter::emitCallStmt(
-  const std::string& procedure_name, std::vector<TacOperand*>* call_args) {
-   if (emitDefaultCallStmt(procedure_name, call_args)) {
+void CodeEmitter::emitCallStmt(const std::string& procedure_name,
+  std::vector<TacOperand*>* call_args, std::string temp) {
+   if (emitDefaultCallStmt(procedure_name, call_args, temp)) {
       return;
    }
 
@@ -326,17 +345,25 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             outfile << ");\n";
             break;
          case OpCode::TAC_RETURN_VOID:
-            emitProcedureEnd();
+            emitProcedureReturn();
             break;
          case OpCode::TAC_RETURN_VALUE:
             outfile << indentation << "_return_" << instr.arg1 << " = "
                     << instr.result << ";\n";
-            emitProcedureEnd();
+            emitProcedureReturn();
             break;
          case OpCode::TAC_PROCEDURE_RETURN:
             outfile << indentation << instr.result << " _return_" << instr.arg1
                     << ";\n";
-            emitProcedureEnd();
+            emitProcedureReturn();
+            break;
+         case OpCode::TAC_DEFAULT_CALL_ASSIGN:
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << "();\n";
+            break;
+         case OpCode::TAC_CALL_ASSIGN:
+            outfile << indentation << instr.type << " " << instr.result << " = "
+                    << instr.arg1 << ";\n";
             break;
       }
    }

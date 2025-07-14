@@ -441,7 +441,8 @@
    call_stmt:
       NAME TOKEN_OPEN_PARENTHESIS call_args TOKEN_CLOSE_PARENTHESIS {
          $$ = processCallStmt($1, $3);
-         emitter.emitCallStmt($1, $3);
+         $$->loc = new_temp();
+         emitter.emitCallStmt($1, $3, $$->loc);
 
          delete $1;
          for (auto arg : *$3) {
@@ -756,7 +757,7 @@
 
          if (!isErrorType(type) && !isVoidKind(type->kind)) {
             std::string tacType = getTacType(type);
-            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_ASSIGN, temp, $1->loc));
+            emitter.emit(TAC_Instruction(tacType, OpCode::TAC_CALL_ASSIGN, temp, $1->loc));
          }
 
          $$ = new TacOperand{type, temp};
