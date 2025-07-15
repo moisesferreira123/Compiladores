@@ -12,6 +12,7 @@
 int yyparse();
 extern FILE* yyin;
 extern SymbolTable symbolTable;
+extern void yyrestart(FILE* input_file);
 
 struct TestCase {
    std::string path;
@@ -20,22 +21,22 @@ struct TestCase {
 
 static const std::vector<TestCase> ALL_TESTS = {
    {        "tests/files/swap.c25",  true },
-   {      "tests/files/person.c25",  true },
-   { "tests/files/day_of_week.c25",  true },
-   {    "tests/files/validate.c25",  true },
-   {   "tests/files/validate2.c25",  true },
-   {   "tests/files/validate3.c25",  true },
-   {   "tests/files/validate4.c25",  true },
-   {   "tests/files/validate5.c25",  true },
    {      "tests/files/error2.c25", false },
+   {    "tests/files/validate.c25",  true },
    {      "tests/files/error1.c25", false },
+   {   "tests/files/validate3.c25",  true },
    {      "tests/files/error3.c25", false },
    {      "tests/files/error4.c25", false },
+   { "tests/files/day_of_week.c25",  true },
    {      "tests/files/error5.c25", false },
    {      "tests/files/error6.c25", false },
+   {   "tests/files/validate5.c25",  true },
+   {   "tests/files/validate2.c25",  true },
    {      "tests/files/error7.c25", false },
    {      "tests/files/error8.c25", false },
+   {      "tests/files/person.c25",  true },
    {      "tests/files/error9.c25", false },
+   {   "tests/files/validate4.c25",  true },
 };
 
 void printHelp(const char* progName) {
@@ -154,6 +155,7 @@ int main(int argc, char* argv[]) {
       std::cerr.rdbuf(parserLog.rdbuf());
 
       program_ok = false;
+      yyrestart(yyin);
       int result = yyparse();
 
       // restaura saída padrão
