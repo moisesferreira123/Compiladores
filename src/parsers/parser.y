@@ -817,7 +817,7 @@
          $$ = new TacOperand{createType(TYPE_BOOL), "false"};
       }
       | TOKEN_NULL {
-         $$ = new TacOperand{createTypeNull(), "null"};
+         $$ = new TacOperand{createTypeNull(), "NULL"};
       }
       ;
 
