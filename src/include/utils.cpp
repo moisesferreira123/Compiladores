@@ -87,6 +87,9 @@ bool isAssignable(Type* to, Type* from) {
    } else if (isEnumVarKind(to->kind)) {
       return ((from->kind == TYPE_ENUM_VALUE || from->kind == TYPE_ENUM_VAR)
         && to->structured == from->structured);
+   } else if (to->kind == TYPE_INT
+     && (from->kind == TYPE_ENUM_VALUE || from->kind == TYPE_ENUM_VAR)) {
+      return true;
    } else {
       return false;
    }
@@ -111,6 +114,9 @@ Type* getExpandedType(Type* first, Type* second) {
       } else {
          return createTypeError();
       }
+   } else if ((isEnumValueKind(first->kind) && second->kind == TYPE_INT)
+     || (isEnumValueKind(second->kind) && first->kind == TYPE_INT)) {
+      return createType(TYPE_INT);
    } else if (isEqualType(first, second)) {
       /// Os tipos eram iguais (ref ou estrutural)
       return new Type(*first);

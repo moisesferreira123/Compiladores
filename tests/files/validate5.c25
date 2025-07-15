@@ -1,0 +1,32 @@
+program votacao
+begin
+   struct Person {
+      name: string;
+      age: int
+   };
+
+   procedure check_vote(age: ref(int), year: ref(int))
+   begin
+      while deref(age) < 18 do
+         deref(age) := deref(age) + 1;
+         deref(year) := deref(year) + 1
+      od
+   end;
+
+   procedure main()
+   begin
+      var year := 2025;
+      var refYear := ref(year);
+      var person: Person;
+      var refAge := ref(person.age)
+   in 
+      person.name := "Pedro";
+      person.age := 13;
+      check_vote(refAge, refYear);
+      printstr("No ano ");
+      printint(year);
+      printstr(" você terá ");
+      printint(person.age);
+      printline(" anos!")
+   end
+end

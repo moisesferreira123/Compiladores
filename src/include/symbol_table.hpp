@@ -121,11 +121,13 @@ class Enum : public Symbol {
 class Node {
    private:
    int id;
+   std::string name;
    std::unordered_map<std::string, std::shared_ptr<Symbol>> table;
    Node* parent;
 
    public:
-   Node(int id, Node* parent) : id(id), parent(parent) { }
+   Node(int id, std::string name, Node* parent)
+       : id(id), name(name), parent(parent) { }
    ~Node() { }
 
    void insert(std::shared_ptr<Symbol> symbol) {
@@ -155,6 +157,7 @@ class Node {
 
    Node* getParent() { return parent; }
    int getId() { return id; }
+   std::string getName() { return name; }
 };
 
 class SymbolTable {
@@ -163,7 +166,7 @@ class SymbolTable {
    int scopes;
 
    public:
-   SymbolTable() : current(new Node(1, nullptr)), scopes(1) {
+   SymbolTable() : current(new Node(1, "program", nullptr)), scopes(1) {
       insertBaseFunctions();
    }
 
@@ -183,7 +186,10 @@ class SymbolTable {
       current->insert(symbol);
    }
 
-   void enterScope() { current = new Node(++scopes, current); }
+   void enterScope(std::string base_name) {
+      base_name += "_" + std::to_string(current->getId());
+      current = new Node(++scopes, base_name, current);
+   }
 
    void exitScope() {
       if (current == nullptr) {
@@ -218,11 +224,23 @@ class SymbolTable {
          current = temp;
       }
       scopes = 1;
-      current = new Node(scopes, nullptr);
+      current = new Node(scopes, "program", nullptr);
       insertBaseFunctions();
    }
 
    int getScopes() { return scopes; }
+   int getCurrentScopeId() {
+      if (current != nullptr) {
+         return current->getId();
+      }
+      return 0;
+   }
+   std::string getCurrentScopeName() {
+      if (current != nullptr) {
+         return current->getName();
+      }
+      return "";
+   }
 
    void insertBaseFunctions();
 };
