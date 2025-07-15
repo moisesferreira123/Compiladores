@@ -229,13 +229,13 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             std::string temp_comp = new_temp();
             std::string temp_arg1 = new_temp();
             outfile << indentation << "int " << temp_comp << " = 1;\n";
-            outfile << indentation << "float " << temp_arg1 << " = "
+            outfile << indentation << "float " << instr.result << " = "
                     << instr.arg1 << ";\n";
             outfile << pot_loop << ":\n";
             outfile << indentation << temp_comp << " = " << temp_comp
                     << " + 1;\n";
-            outfile << indentation << instr.arg1 << " = " << instr.arg1 << " * "
-                    << temp_comp << ";\n";
+            outfile << indentation << instr.result << " = " << instr.result  << " * "
+                    << instr.arg1 << ";\n";
             outfile << indentation << "if(" << temp_comp << " < " << instr.arg2
                     << ") goto " << pot_loop << ";\n";
             break;
