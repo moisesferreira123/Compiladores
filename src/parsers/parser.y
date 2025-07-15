@@ -555,8 +555,6 @@
          delete $3;
       }
       | TOKEN_DEREF TOKEN_OPEN_PARENTHESIS deref_var TOKEN_CLOSE_PARENTHESIS {
-         $$ = new TacOperand{processDerefVar($3->type), $3->loc};
-         delete $3;
          std::string loc = "*" + $3->loc;
 
          Type* type = processDerefVar($3->type);
