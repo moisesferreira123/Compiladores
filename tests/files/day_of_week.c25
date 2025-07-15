@@ -18,7 +18,7 @@ begin
    procedure main()
    begin
       var day: dayOfWeek;
-      var day2: dayOfWeek := dayOfWeek.MONDAY;
+      var day2: dayOfWeek := dayOfWeek.THURSDAY;
       var x := 1;
       var y := 10
    in
@@ -30,7 +30,9 @@ begin
             x := add(x, 2)
          fi
       od;
-      day := day2;
-      printint(x)
+      y := day;
+      printint(x);
+      printline("");
+      printint(day)
    end
 end
