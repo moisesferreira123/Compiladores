@@ -41,7 +41,7 @@ void CodeEmitter::emit(
 void CodeEmitter::emitProcedureBegin(const std::string& procedure_name) {
    if (procedure_name != "main") {
       std::string procedure_label_begin
-        = procedure_name + "_" + std::to_string(symbolTable.getScopes());
+        = procedure_name + "_" + std::to_string(symbolTable.getCurrentScopeId());
       std::string procedure_label_end = new_label();
       emit(OpCode::TAC_GOTO, procedure_label_end);
       emit(OpCode::TAC_LABEL, procedure_label_begin);
