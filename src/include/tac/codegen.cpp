@@ -168,15 +168,13 @@ void CodeEmitter::emitCallStmt(const std::string& procedure_name,
    emit(OpCode::TAC_GOTO, procedure_label);
    emit(OpCode::TAC_LABEL, return_label);
 
-   /// BUG: getScopeId() pega o escopo onde o procedimento está, mas não o do
-   /// return.
-   std::string return_str
-     = "_return_" + std::to_string(procedure_symbol->getScopeId());
+   std::string return_str = "_return_" + procedure_symbol->getName() + "_"
+     + std::to_string(procedure_symbol->getScopeId());
 
    Type* type = createType(procedure->getType());
    if (!isVoidKind(type->kind)) {
       std::string tacType = getTacType(type);
-      emit(TAC_Instruction(tacType, OpCode::TAC_ASSIGN, return_str, temp));
+      emit(TAC_Instruction(tacType, OpCode::TAC_CALL_ASSIGN, temp, return_str));
    }
    delete type;
 }
@@ -234,8 +232,8 @@ void CodeEmitter::write_to_file(const std::string& filename) {
             outfile << pot_loop << ":\n";
             outfile << indentation << temp_comp << " = " << temp_comp
                     << " + 1;\n";
-            outfile << indentation << instr.result << " = " << instr.result  << " * "
-                    << instr.arg1 << ";\n";
+            outfile << indentation << instr.result << " = " << instr.result
+                    << " * " << instr.arg1 << ";\n";
             outfile << indentation << "if(" << temp_comp << " < " << instr.arg2
                     << ") goto " << pot_loop << ";\n";
             break;
