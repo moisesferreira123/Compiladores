@@ -19,15 +19,18 @@ begin
    begin
       var day: dayOfWeek;
       var day2: dayOfWeek := dayOfWeek.MONDAY;
-      var x := 6
+      var x := 1;
+      var y := 10
    in
-      while x >= 0 && x <= 4 do
-         day := day2;
-         if x = 3 then
+      while y > 4 do
+         y := y - 1;
+         if y = 5 then
             x := x * 2
          else
-            x := add(x, 1)
+            x := add(x, 2)
          fi
-      od
+      od;
+      day := day2;
+      printint(x)
    end
 end
