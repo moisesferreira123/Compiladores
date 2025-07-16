@@ -33,6 +33,6 @@ begin
       y := day;
       printint(x);
       printline("");
-      printint(day)
+      printint(day2)
    end
 end

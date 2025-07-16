@@ -24,7 +24,7 @@ class CodeEmitter {
 
    public:
    // Método principal para adicionar uma instrução à lista.
-   void emit(const TAC_Instruction& instr);
+   void emit(TAC_Instruction instr);
 
    // Uma sobrecarga (helper) para facilitar a vida. Cria e adiciona a instrução
    // em um só passo.

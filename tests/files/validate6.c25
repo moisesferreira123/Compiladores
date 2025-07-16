@@ -1,0 +1,24 @@
+program day_of_week
+begin
+   procedure add(a: int, b: int): int
+   begin
+      return a + b
+   end;
+
+   procedure sub(a: int, b: int): int
+   begin
+      return a - b
+   end;
+
+   procedure main()
+   begin
+      var x := 1;
+      var y := 10
+   in
+      x := add(x, y);
+      y := sub(y, x);
+      printint(x);
+      printstr(" ");
+      printint(y)
+   end
+end

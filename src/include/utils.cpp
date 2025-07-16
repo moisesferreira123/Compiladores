@@ -198,6 +198,7 @@ bool processProcedureDecl(char* name,
       for (Paramfield* param : *procedure_params) {
          if (isErrorType(param->type)) {
             variableInvalidError(param->name);
+            symbolTable.exitScope();
             return false;
          }
 
@@ -206,12 +207,14 @@ bool processProcedureDecl(char* name,
          if (symbol == nullptr) {
             // Variável não declarada
             variableNotDeclaredError(param->name);
+            symbolTable.exitScope();
             return false;
          } else if (auto var = std::dynamic_pointer_cast<Variable>(symbol)) {
             //  Variável existente
             procedureParams.push_back(var);
          } else {
             expectedVariableError(param->name);
+            symbolTable.exitScope();
             return false;
          }
       }
@@ -457,8 +460,7 @@ TacOperand* processCallStmt(char* name, std::vector<TacOperand*>* call_args) {
          }
       }
 
-      return new TacOperand { createType(procedure->getType()),
-         "_return_" + std::to_string(procedure->getScopeId()) };
+      return new TacOperand { createType(procedure->getType()), "" };
    } else {
       expectedProcedureError(name);
       return new TacOperand { createTypeError(), "" };

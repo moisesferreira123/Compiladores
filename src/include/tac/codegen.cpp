@@ -9,7 +9,6 @@
 CodeEmitter emitter;
 std::vector<std::string> label_stack;
 std::vector<std::string> procedure_context_stack;
-// std::vector<std::vector<TAC_Instruction>> procedures_stack;
 std::set<std::string> variables;
 
 static int count_temp = 0;
@@ -28,24 +27,24 @@ std::string new_label() {
    return nome_label;
 }
 
-void CodeEmitter::emit(const TAC_Instruction& instr) {
+void CodeEmitter::emit(TAC_Instruction instr) {
    this->instructions.push_back(instr);
 }
 
 void CodeEmitter::emit(
   OpCode op, std::string result, std::string arg1, std::string arg2) {
-   this->instructions.push_back(
-     TAC_Instruction(op, std::move(result), std::move(arg1), std::move(arg2)));
+   auto tac = TAC_Instruction(op, result, arg1, arg2);
+   this->instructions.push_back(tac);
 }
 
 void CodeEmitter::emitProcedureBegin(const std::string& procedure_name) {
    if (procedure_name != "main") {
-      std::string procedure_label_begin
-        = procedure_name + "_" + std::to_string(symbolTable.getCurrentScopeId());
+      std::string procedure_label_begin = procedure_name + "_"
+        + std::to_string(symbolTable.getCurrentScopeId());
       std::string procedure_label_end = new_label();
       emit(OpCode::TAC_GOTO, procedure_label_end);
-      emit(OpCode::TAC_LABEL, procedure_label_begin);
       label_stack.push_back(procedure_label_end);
+      emit(OpCode::TAC_LABEL, procedure_label_begin);
    }
 }
 
@@ -176,6 +175,7 @@ void CodeEmitter::emitCallStmt(const std::string& procedure_name,
       std::string tacType = getTacType(type);
       emit(TAC_Instruction(tacType, OpCode::TAC_CALL_ASSIGN, temp, return_str));
    }
+
    delete type;
 }
 
@@ -199,7 +199,9 @@ void CodeEmitter::write_to_file(const std::string& filename) {
    outfile << "void* _label_stack[2048];\n";
    outfile << "int _size = 0;\n";
 
-   for (const auto& instr : this->instructions) {
+   std::string end_label;
+
+   for (TAC_Instruction instr : this->instructions) {
       switch (instr.op) {
          case OpCode::TAC_ATR:
             outfile << indentation << instr.result << " = " << instr.arg1
@@ -354,18 +356,17 @@ void CodeEmitter::write_to_file(const std::string& filename) {
          case OpCode::TAC_DEFAULT_CALL_END:
             outfile << ");\n";
             break;
-         case OpCode::TAC_RETURN_VOID:
-            emitProcedureReturn();
-            break;
          case OpCode::TAC_RETURN_VALUE:
             outfile << indentation << "_return_" << instr.arg1 << " = "
                     << instr.result << ";\n";
-            emitProcedureReturn();
+            end_label = "_L_end" + instr.arg2;
+            outfile << indentation << "goto " << end_label << ";\n";
             break;
          case OpCode::TAC_PROCEDURE_RETURN:
             outfile << indentation << instr.result << " _return_" << instr.arg1
                     << ";\n";
-            emitProcedureReturn();
+            end_label = "_L_end" + instr.arg2;
+            outfile << indentation << "goto " << end_label << ";\n";
             break;
          case OpCode::TAC_DEFAULT_CALL_ASSIGN:
             outfile << indentation << instr.type << " " << instr.result << " = "

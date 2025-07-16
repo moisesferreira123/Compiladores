@@ -163,7 +163,7 @@
          symbolTable.enterScope($2);
       } TOKEN_OPEN_PARENTHESIS procedure_params TOKEN_CLOSE_PARENTHESIS return_type {
          if (!isErrorType($7) && !isVoidKind($7->kind)) {
-            emitter.emit(OpCode::TAC_PROCEDURE_RETURN, getTacType($7), symbolTable.getCurrentScopeName());
+            emitter.emit(OpCode::TAC_PROCEDURE_RETURN, getTacType($7), symbolTable.getCurrentScopeName(), std::to_string(symbolTable.getScopes()));
          }
       } TOKEN_BEGIN scope_declarations stmt_list TOKEN_END {
          $$ = processProcedureDecl($2, $5, $7, $10, $11);
@@ -443,12 +443,6 @@
          $$ = processCallStmt($1, $3);
          $$->loc = new_temp();
          emitter.emitCallStmt($1, $3, $$->loc);
-
-         delete $1;
-         for (auto arg : *$3) {
-            delete arg;
-         }
-         delete $3;
       }
       ;
    
@@ -474,9 +468,9 @@
       TOKEN_RETURN return_stmt2 {
          Type* type = $2->type;
          if (!isErrorType(type) && !isVoidKind(type->kind)) {
-            emitter.emit(OpCode::TAC_RETURN_VALUE, $2->loc, symbolTable.getCurrentScopeName());
+            emitter.emit(OpCode::TAC_RETURN_VALUE, $2->loc, symbolTable.getCurrentScopeName(), std::to_string(symbolTable.getScopes()));
          } else if (isVoidKind(type->kind)) {
-            emitter.emit(OpCode::TAC_RETURN_VOID, "");
+            emitter.emitProcedureReturn();
          }
 
          $$ = type;

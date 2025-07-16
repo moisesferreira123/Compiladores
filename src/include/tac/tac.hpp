@@ -70,28 +70,22 @@ enum class OpCode {
 };
 
 // A estrutura que representa uma única instrução TAC.
-struct TAC_Instruction {
+class TAC_Instruction {
+   public:
    OpCode op;
    std::string type;
    std::string result;
-   std::string arg1; // Primeiro operando ou condição do if.
+   std::string arg1;
    std::string arg2; // Segundo operando.
 
    // Um construtor para facilitar a criação de novas instruções.
    TAC_Instruction(
      OpCode o, std::string r, std::string a1 = "", std::string a2 = "")
-       : op(o)
-       , result(std::move(r))
-       , arg1(std::move(a1))
-       , arg2(std::move(a2)) { }
+       : op(o), result(r), arg1(a1), arg2(a2) { }
 
    TAC_Instruction(std::string t, OpCode o, std::string r, std::string a1 = "",
      std::string a2 = "")
-       : op(o)
-       , type(t)
-       , result(std::move(r))
-       , arg1(std::move(a1))
-       , arg2(std::move(a2)) { }
+       : op(o), type(t), result(r), arg1(a1), arg2(a2) { }
 };
 
 #endif // TAC_HPP
