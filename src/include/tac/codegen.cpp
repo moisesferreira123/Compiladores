@@ -365,8 +365,6 @@ void CodeEmitter::write_to_file(const std::string& filename) {
          case OpCode::TAC_PROCEDURE_RETURN:
             outfile << indentation << instr.result << " _return_" << instr.arg1
                     << ";\n";
-            end_label = "_L_end" + instr.arg2;
-            outfile << indentation << "goto " << end_label << ";\n";
             break;
          case OpCode::TAC_DEFAULT_CALL_ASSIGN:
             outfile << indentation << instr.type << " " << instr.result << " = "
