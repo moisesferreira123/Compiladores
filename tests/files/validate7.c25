@@ -1,0 +1,36 @@
+program validate7
+begin
+   procedure view(a: ref(int), b: ref(int), c: int)
+   begin
+      if deref(a) > deref(b) then
+         return
+      fi;
+      while deref(a) <> deref(b) do
+         if deref(a) + deref(b) = c then
+            return
+         else 
+            if deref(a) + deref(b) < c then
+               deref(a) := deref(a) + 1
+            else
+               deref(b) := deref(b) - 1
+            fi
+         fi
+      od
+   end;
+
+   procedure main()
+   begin
+      var x := 10;
+      var y := 30;
+      var target := 23;
+      var xr := ref(x);
+      var yr := ref(y)
+   in
+      view(xr, yr, target);
+      printstr("Os valores de x são: ");
+      printint(x);
+      printline("");
+      printstr("Os valores de y são: ");
+      printint(y)
+   end
+end
